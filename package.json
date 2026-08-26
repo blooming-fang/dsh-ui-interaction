@@ -1,16 +1,23 @@
 {
   "name": "dsh-ui-interaction",
   "version": "0.1.0",
-  "description": "Provider-first two-level model picker for the DeepSeek Harness web GUI: replaces the composer model seat and /model popup with a provider → model drill-down over the session directory",
+  "description": "UI interaction optimizations for the DeepSeek Harness web GUI: currently the provider-first two-level model picker (provider → model drill-down) replacing the composer model seat; more interaction improvements to come",
   "keywords": [
     "deepseek-harness",
     "dsh",
     "ui",
+    "ux",
+    "interaction",
+    "optimization",
+    "enhancement",
     "model",
+    "model-picker",
+    "model-selection",
     "provider",
-    "picker",
+    "composer",
     "plugin",
-    "bundle"
+    "bundle",
+    "web"
   ],
   "license": "MIT",
   "type": "module",
@@ -29,6 +36,17 @@
   "engines": {
     "node": ">=22"
   },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blooming-fang/dsh-ui-interaction.git"
+  },
+  "bugs": {
+    "url": "https://github.com/blooming-fang/dsh-ui-interaction/issues"
+  },
+  "homepage": "https://github.com/blooming-fang/dsh-ui-interaction#readme",
   "scripts": {
     "build": "node ./scripts/build.mjs",
     "prepare": "pnpm run build",
