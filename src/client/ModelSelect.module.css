@@ -121,6 +121,7 @@
 }
 
 .groups {
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
 }
@@ -156,9 +157,12 @@
 }
 
 /* Breadcrumb back cell atop the models pane: left chevron + provider name,
-   returning to the provider list. */
+   returning to the provider list. `flex: 0 0 auto` pins it as a fixed header —
+   without it, flex-shrink squeezes the 34px height when the model list below
+   overflows the menu's max-height and needs to scroll. */
 .back {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 4px;
   width: 100%;
