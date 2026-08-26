@@ -1,0 +1,8 @@
+scripts/
+.git/
+.github/
+src/
+tsconfig.json
+tsconfig.typecheck.json
+tsdown.config.ts
+*.log

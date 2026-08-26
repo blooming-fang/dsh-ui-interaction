@@ -1,0 +1,23 @@
+# dsh-ui-interaction bundle patch layer.
+#
+# Replaces the shipped model-selection surface with a provider-first two-level
+# picker. The web-app bundle's `ui-model-selection` row (the built-in composer
+# seat + /model popup) is disabled here and this bundle's own row inserted in
+# its place; the client half serves the replacement over the same
+# `conversation.input.model` seat and `/model` command, backed by its own
+# per-session directory.
+#
+# A patch replaces a targeted row's whole config, so disabling by id is the
+# exact gesture; the `name` guard keeps a future rename from silently
+# re-enabling a stale surface. `name` is the FULL package specifier as
+# installed in the profile's node_modules — the loader imports it as a module
+# and pnpm links packages by true name, so a bare specifier here fails to
+# resolve (ERR_MODULE_NOT_FOUND).
+
+- id: ui-model-selection
+  name: "@deepseek-ai/dsh-client-ui-model-selection"
+  disabled: true
+
+- insert:
+    - id: dsh-ui-interaction
+      name: dsh-ui-interaction
