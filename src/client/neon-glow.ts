@@ -99,6 +99,32 @@ body[data-ds-dark-theme] .dsh-neon-glow-blob {
 [data-composer-card] {
   box-shadow: none !important;
 }
+/* The sidebar New Session button (the .newSession control, identified by the
+   stable _newSession class suffix rather than its hashed prefix) gets a
+   glassmorphism treatment: a translucent frosted fill with a backdrop blur
+   that pulls the neon glow through behind it, plus a bright inner highlight
+   and a soft floating shadow. Light theme uses a pale milk-glass; dark theme
+   a deep smoky glass. */
+body:not([data-ds-dark-theme]) [class$="_newSession"] {
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border-color: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 4px 16px rgba(31, 38, 135, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+body:not([data-ds-dark-theme]) [class$="_newSession"]:hover {
+  background: rgba(255, 255, 255, 0.62);
+}
+body[data-ds-dark-theme] [class$="_newSession"] {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+body[data-ds-dark-theme] [class$="_newSession"]:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
 /* The chat message column (the ChatView .column, identified by the stable
    data-chat-flow attribute rather than its hashed CSS Module class) tightens
    its inter-message gap from 16px to 8px so turns sit closer together. */

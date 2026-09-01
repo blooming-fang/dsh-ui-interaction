@@ -20,7 +20,7 @@ Esc 逐层返回（模型 → 提供商 → 根 → 关闭）。`/model` 命令�
 - **非纯白背景** —— 光晕层自备页面背景：亮色主题为淡蓝灰 `#FBFCFE`，暗色主题为深灰；app 基础表面背景置为透明以露出这层背景与光晕。
 - **两色、多光晕、错落大小** —— 紫与蓝两个色调，但以多个尺寸不同的光晕池（56vw ~ 24vw）错落分布在页面四周，各自缓慢漂移、缩放。
 - **淡雅克制** —— 光晕强度刻意压低：亮色主题几乎不可察觉，暗色主题稍强但仍属氛围而非饱和色块。
-- **配套表面微调** —— composer 输入框卡片去掉悬浮阴影（扁平）；用户消息气泡加一个比背景深的边框，作为清晰的消息边界；暗色主题下 markdown 内容正文从 `--dsw-alias-label-primary` 降为 `--dsw-alias-label-secondary`，让助手正文在更深沉的霓虹背景下更安静；亮色主题下代码块头部横幅背景改为中性白 `--dsw-static-neutral-bluish-00`，markdown 内联代码块背景同样改为纯白；亮色主题下聊天内容区内所有背景用 `--dsw-alias-markdown-code-block` 的表面（代码块、命令卡片、上下文注入、工具行、JSON 块等）整体改为纯白；消息列（`[data-chat-flow]`）的条目间距从 16px 收紧为 8px；markdown 的 h2 上边距从 32px 收紧为 16px。
+- **配套表面微调** —— composer 输入框卡片去掉悬浮阴影（扁平）；用户消息气泡加一个比背景深的边框，作为清晰的消息边界；暗色主题下 markdown 内容正文从 `--dsw-alias-label-primary` 降为 `--dsw-alias-label-secondary`，让助手正文在更深沉的霓虹背景下更安静；亮色主题下代码块头部横幅背景改为中性白 `--dsw-static-neutral-bluish-00`，markdown 内联代码块背景同样改为纯白；亮色主题下聊天内容区内所有背景用 `--dsw-alias-markdown-code-block` 的表面（代码块、命令卡片、上下文注入、工具行、JSON 块等）整体改为纯白；消息列（`[data-chat-flow]`）的条目间距从 16px 收紧为 8px；markdown 的 h2 上边距从 32px 收紧为 16px；左侧侧栏的「新会话」按钮（`[class$="_newSession"]`）改为玻璃拟态样式（半透明磨砂 + 背景模糊 + 内高光与柔影，亮/暗主题分别适配）。
 - **主题适配** —— 跟随 body 的 `data-ds-dark-theme` 自动切换，无需 JS。
 - **无障碍** —— 尊重 `prefers-reduced-motion`，减弱动画时仅保留静态光晕。
 
