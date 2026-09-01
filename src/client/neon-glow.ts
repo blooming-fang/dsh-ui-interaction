@@ -35,6 +35,13 @@ const GLOBAL_CSS = `
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+  /* The backdrop itself owns the page background — a light near-white-blue in
+     light theme, a deep slate in dark — so the glow draws on top of it,
+     clearly visible, rather than hiding behind an opaque app surface. */
+  background: #fbfcfe;
+}
+body[data-ds-dark-theme] .dsh-neon-glow-backdrop {
+  background: rgb(21, 21, 23);
 }
 /* The app shell sits in #root; lift it above the ambient layer. */
 .dsh-neon-glow-backdrop ~ #root {
@@ -43,24 +50,16 @@ const GLOBAL_CSS = `
 }
 /* The app's base surfaces (AppFrame, conversation root, side panel) paint an
    opaque var(--dsw-alias-bg-base) over the whole viewport, which would bury
-   the ambient layer behind it. Let the glow show through as a subtle tint by
-   making those base fills translucent — dark keeps ~64% of its base so the
-   neon reads, light keeps ~90% so it stays gentle. */
+   the ambient layer behind it. Make them transparent so the backdrop's
+   background + glow show through. The !important beats both the token
+   stylesheets and any inline body token the theme presenter applies. */
 body {
-  --dsh-neon-bg-alpha: 0.9;
-  --dsh-neon-sidebar-alpha: 0.9;
+  --dsw-alias-bg-base: transparent !important;
+  --dsw-specific-sidebar-fill: transparent !important;
 }
 body[data-ds-dark-theme] {
-  --dsh-neon-bg-alpha: 0.64;
-  --dsh-neon-sidebar-alpha: 0.76;
-}
-body {
-  --dsw-alias-bg-base: color-mix(in srgb, var(--dsw-static-neutral-bluish-00) var(--dsh-neon-bg-alpha), transparent);
-  --dsw-specific-sidebar-fill: color-mix(in srgb, var(--dsw-static-neutral-bluish-50) var(--dsh-neon-sidebar-alpha), transparent);
-}
-body[data-ds-dark-theme] {
-  --dsw-alias-bg-base: color-mix(in srgb, var(--dsw-static-neutral-bluish-950) var(--dsh-neon-bg-alpha), transparent);
-  --dsw-specific-sidebar-fill: color-mix(in srgb, var(--dsw-static-neutral-bluish-900) var(--dsh-neon-sidebar-alpha), transparent);
+  --dsw-alias-bg-base: transparent !important;
+  --dsw-specific-sidebar-fill: transparent !important;
 }
 .dsh-neon-glow-blob {
   position: absolute;
@@ -68,7 +67,7 @@ body[data-ds-dark-theme] {
   filter: blur(80px);
   will-change: transform, opacity;
   background: radial-gradient(circle, var(--glow-light) 0%, transparent 70%);
-  opacity: 0.14;
+  opacity: 0.2;
 }
 /* Dark theme: a deeper-palette neon, still kept from turning into a saturated
    wash. */
@@ -94,6 +93,18 @@ body[data-ds-dark-theme] .dsh-neon-glow-blob {
   from { transform: translate(0, 0) scale(0.98); }
   to { transform: translate(4vw, -6vh) scale(1.08); }
 }
+/* The composer input card (data-composer-card) floats over the ambient glow
+   with its own elevated shadow; drop it so the surface reads flat against the
+   neon backdrop. */
+[data-composer-card] {
+  box-shadow: none !important;
+}
+/* User messages: give the user bubble a border one notch darker than the page
+   background so it reads as a distinct surface against the neon backdrop.
+   :not([data-pending-steering]) keeps the pending steering projection out. */
+[data-time-hover-root]:not([data-pending-steering]) [class$="_bubble"] {
+  border: 1px solid rgba(15, 23, 42, 0.18);
+}
 /* Honor reduced-motion: keep the ambient color but drop the drift. */
 @media (prefers-reduced-motion: reduce) {
   .dsh-neon-glow-blob {
@@ -114,7 +125,7 @@ interface NeonBlob {
 const BLOBS: readonly NeonBlob[] = [
   {
     style: { top: '-18%', left: '-15%', width: '56vw', height: '56vw' },
-    light: '#a78bfa', dark: '#7c3aed',
+    light: '#b8adf9', dark: '#8b5cf6',
   },
   {
     style: { top: '-10%', right: '-14%', width: '42vw', height: '42vw' },
@@ -122,7 +133,7 @@ const BLOBS: readonly NeonBlob[] = [
   },
   {
     style: { bottom: '-16%', left: '18%', width: '44vw', height: '44vw' },
-    light: '#a78bfa', dark: '#7c3aed',
+    light: '#b8adf9', dark: '#8b5cf6',
   },
   {
     style: { bottom: '-8%', right: '-6%', width: '30vw', height: '30vw' },
@@ -130,7 +141,7 @@ const BLOBS: readonly NeonBlob[] = [
   },
   {
     style: { bottom: '-4%', left: '-8%', width: '24vw', height: '24vw' },
-    light: '#a78bfa', dark: '#7c3aed',
+    light: '#b8adf9', dark: '#8b5cf6',
   },
 ]
 
