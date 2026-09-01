@@ -41,6 +41,27 @@ const GLOBAL_CSS = `
   position: relative;
   z-index: 1;
 }
+/* The app's base surfaces (AppFrame, conversation root, side panel) paint an
+   opaque var(--dsw-alias-bg-base) over the whole viewport, which would bury
+   the ambient layer behind it. Let the glow show through as an atmospheric
+   tint by making those base fills translucent — dark keeps ~58% of its base so
+   the neon reads, light keeps ~92% so it stays a whisper. */
+body {
+  --dsh-neon-bg-alpha: 0.92;
+  --dsh-neon-sidebar-alpha: 0.92;
+}
+body[data-ds-dark-theme] {
+  --dsh-neon-bg-alpha: 0.58;
+  --dsh-neon-sidebar-alpha: 0.7;
+}
+body {
+  --dsw-alias-bg-base: color-mix(in srgb, var(--dsw-static-neutral-bluish-00) var(--dsh-neon-bg-alpha), transparent);
+  --dsw-specific-sidebar-fill: color-mix(in srgb, var(--dsw-static-neutral-bluish-50) var(--dsh-neon-sidebar-alpha), transparent);
+}
+body[data-ds-dark-theme] {
+  --dsw-alias-bg-base: color-mix(in srgb, var(--dsw-static-neutral-bluish-950) var(--dsh-neon-bg-alpha), transparent);
+  --dsw-specific-sidebar-fill: color-mix(in srgb, var(--dsw-static-neutral-bluish-900) var(--dsh-neon-sidebar-alpha), transparent);
+}
 .dsh-neon-glow-blob {
   position: absolute;
   border-radius: 50%;
@@ -52,7 +73,7 @@ const GLOBAL_CSS = `
 /* Dark theme: a vivid, deeper-palette neon at higher strength. */
 body[data-ds-dark-theme] .dsh-neon-glow-blob {
   background: radial-gradient(circle, var(--glow-dark) 0%, transparent 72%);
-  opacity: 0.5;
+  opacity: 0.55;
 }
 /* Slow drift keeps the atmosphere alive without demanding attention. */
 .dsh-neon-glow-blob:nth-child(1) { animation: dsh-neon-drift-a 26s ease-in-out infinite alternate; }
