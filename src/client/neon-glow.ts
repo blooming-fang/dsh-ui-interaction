@@ -99,11 +99,42 @@ body[data-ds-dark-theme] .dsh-neon-glow-blob {
 [data-composer-card] {
   box-shadow: none !important;
 }
+/* The chat message column (the ChatView .column, identified by the stable
+   data-chat-flow attribute rather than its hashed CSS Module class) tightens
+   its inter-message gap from 16px to 8px so turns sit closer together. */
+[data-chat-flow] {
+  gap: 8px;
+}
 /* User messages: give the user bubble a border one notch darker than the page
    background so it reads as a distinct surface against the neon backdrop.
    :not([data-pending-steering]) keeps the pending steering projection out. */
 [data-time-hover-root]:not([data-pending-steering]) [class$="_bubble"] {
   border: 1px solid rgba(15, 23, 42, 0.18);
+}
+/* Light theme: the code block banner surface of CodeBlock, whose background
+   resolves through the --dsl-code-block-banner-background-color custom
+   property, drops to a plain neutral white so it reads flat against the neon
+   backdrop. The .md-code-block global class is the stable root; overriding the
+   custom property there avoids depending on the hashed banner class. */
+body:not([data-ds-dark-theme]) .md-code-block {
+  --dsl-code-block-banner-background-color: var(--dsw-static-neutral-bluish-00);
+}
+/* Dark theme: the markdown content root (the css.markdown surface of
+   MarkdownText) drops its label-primary body color to label-secondary so the
+   assistant prose reads one step quieter against the deeper neon backdrop. */
+body[data-ds-dark-theme] ._markdown_1r4m5_5 {
+  color: var(--dsw-alias-label-secondary);
+}
+/* Light theme: inline code (the .markdown :not(pre) > code chips, scoped to
+   the markdown content root) drops its background to a pure neutral white so
+   the chips read flat against the pale neon backdrop instead of tinting. */
+body:not([data-ds-dark-theme]) ._markdown_1r4m5_5 :not(pre) > code {
+  background-color: var(--dsw-static-neutral-bluish-00);
+}
+/* Tighten the markdown h2 margins (32px above 16px below becomes 16px above
+   16px below) so section headings sit closer to the surrounding prose. */
+._markdown_1r4m5_5 h2 {
+  margin: 16px 0 16px;
 }
 /* Honor reduced-motion: keep the ambient color but drop the drift. */
 @media (prefers-reduced-motion: reduce) {
