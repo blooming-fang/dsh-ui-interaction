@@ -24,6 +24,15 @@ Esc 逐层返回（模型 → 提供商 → 根 → 关闭）。`/model` 命令�
 - **主题适配** —— 跟随 body 的 `data-ds-dark-theme` 自动切换，无需 JS。
 - **无障碍** —— 尊重 `prefers-reduced-motion`，减弱动画时仅保留静态光晕。
 
+### 品牌改版：去掉 logo
+
+去掉 DeepSeek 的鲸鱼/鱼形 logo（品牌文字保持不变）：
+
+- **侧栏 wordmark** —— 隐藏「鲸鱼图形 + deepseek 字母 + HARNESS 徽标」的整体 SVG（`viewBox="0 0 182 24"`）。
+- **新会话内容区** —— 隐藏英雄区头图前导的鱼形 logo（`FishLogo`）。
+- **折叠侧栏** —— 收起态工具栏的鱼形图标一并隐藏。
+- **实现方式** —— 纯 CSS，用稳定 `viewBox` 签名（wordmark `0 0 182 24`、fish `0 0 23.16 17.04`）隐藏 logo，不依赖 hashed 类名；`display:none` 隐藏而非删除，React 重渲染不会撤销；纯装饰，不接入数据或 slot。
+
 ## 后续规划
 
 本包会继续加入其它交互优化。每个新优化都在同一 patch 层内、按统一的接入缝隙（slot 注册、命令贡献、ctx 服务）叠加，并附带有明确的接管/覆盖关系。

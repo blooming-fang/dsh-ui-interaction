@@ -9,6 +9,7 @@
 **当前已实现的功能**：
 1. **模型选择器优化** —— 把 composer 的模型选择从「单一按提供商分组的大列表」改成「先提供商、后模型」的两级下钻。
 2. **霓虹氛围背景光晕** —— 为整个 GUI 页面背景叠加多个大小不一的柔和彩色光晕（仅紫、蓝两色），并自备非纯白页面背景（亮色 `#FBFCFE` / 暗色深灰），同时配套调整 composer 输入框（去阴影）与用户消息气泡（加深边框）两处表面。亮/暗主题分别给出合适的强度（整体克制淡雅）。
+3. **品牌改版** —— 去掉 DeepSeek 的鲸鱼/鱼形 logo（品牌文字保持不变）：隐藏侧栏 wordmark、新会话英雄区与折叠侧栏的鱼形 logo。
 
 **后续规划**：在本包内继续增加其它交互优化。每个新优化应遵循下文「新增一个优化功能」的流程，并与现有功能在同一 patch 层内共处。
 
@@ -40,6 +41,22 @@
 - 配套表面微调的定位必须用稳定的属性/结构选择器（`data-composer-card`、`data-time-hover-root`、`[class$="_bubble"]` 结尾匹配），**不得**依赖每次构建会变的完整 hashed 类名。
 - 注入的全局样式里的注释**不得含反引号**（模板字符串会被提前终止，导致构建失败）。
 
+## 当前功能：品牌改版（branding.ts）
+
+`dsh-ui-interaction` 还在浏览器端挂载一层**品牌改版**（`branding.ts`），去掉 DeepSeek 的鲸鱼/鱼形 logo（品牌文字保持不变）。
+
+- **挂载方式** —— `apply` 通过 `ctx.effect` 调用 `applyDshBranding()`，注入一段纯 CSS 样式表（与 `applyNeonGlow` 同款模式）；卸载时移除该样式。
+- **稳定 DOM 签名** —— 用 `viewBox` 精确识别两个品牌 SVG，不依赖 hashed 类名：
+  - `BrandWordmark`（`viewBox="0 0 182 24"`，鲸鱼 + deepseek 字母 + HARNESS 徽标）→ `display: none`；
+  - `FishLogo`（`viewBox="0 0 23.16 17.04"`，折叠侧栏工具栏 + 新会话英雄区头图）→ `display: none`。
+- **React 安全** —— 用 `display: none` 隐藏而非删除节点：删除会让 React 重新创建并顶掉替换内容；纯 CSS 声明式，React 重渲染不会撤销。
+- **纯装饰** —— 不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
+
+**不可回退的不变量**：
+- 定位必须用稳定的 `viewBox` 签名（`0 0 182 24` / `0 0 23.16 17.04`），**不得**依赖每次构建会变的 hashed 类名。
+- 用 `display: none` 隐藏而非删除节点，避免 React 重新创建。
+- 这是纯装饰：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
+
 ## 目录结构
 
 ```
@@ -55,6 +72,7 @@ dsh-ui-interaction/
 │       ├── slots.ts      # 席位的注入面类型
 │       ├── locales.ts    # `model` 命名空间字典
 │       ├── neon-glow.ts  # 霓虹背景光晕层与全局样式
+│       ├── branding.ts   # 品牌改版：隐藏鲸鱼/鱼形 logo（纯 CSS）
 │       ├── ModelSelect.tsx        # 两级「提供商 → 模型」席位
 │       └── ModelSelect.module.css
 ├── scripts/

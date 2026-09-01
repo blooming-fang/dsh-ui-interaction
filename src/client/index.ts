@@ -30,6 +30,7 @@ import { ModelDirectoryResolver } from './service.ts'
 import type { ModelSelectInjected } from './slots.ts'
 import { ModelSelect } from './ModelSelect.tsx'
 import { applyNeonGlow } from './neon-glow.ts'
+import { applyDshBranding } from './branding.ts'
 import { en, zh, type ModelKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -110,6 +111,10 @@ export function apply(ctx: ClientContext): void {
   // plugin and disposed with it. No data, no slots — it renders nothing
   // model-visible.
   ctx.effect(() => applyNeonGlow(), 'dsh-ui-interaction: neon-glow background')
+
+  // Branding retouch: drop the whale/fish logos and present the sidebar brand
+  // as "Dsh Harness". Pure decorative chrome, disposed with the plugin.
+  ctx.effect(() => applyDshBranding(), 'dsh-ui-interaction: brand retouch')
 
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-ui-interaction: dictionaries')
 
