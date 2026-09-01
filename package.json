@@ -1,6 +1,6 @@
 {
   "name": "dsh-ui-interaction",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "UI interaction optimizations for the DeepSeek Harness web GUI: the provider-first two-level model picker (provider → model drill-down) replacing the composer model seat, plus an ambient neon-glow background with a non-white page tint and related surface tweaks; more improvements to come",
   "keywords": [
     "deepseek-harness",

@@ -119,6 +119,15 @@ body[data-ds-dark-theme] .dsh-neon-glow-blob {
 body:not([data-ds-dark-theme]) .md-code-block {
   --dsl-code-block-banner-background-color: var(--dsw-static-neutral-bluish-00);
 }
+/* Light theme, chat content area (the message column identified by the stable
+   data-chat-flow attribute): any surface whose background resolves through the
+   markdown code-block token drops to a neutral white, so code blocks, command
+   cards, context injections, tool rows, and JSON blocks all read flat against
+   the pale neon backdrop. Overriding the token on the container cascades to
+   every descendant without depending on their hashed class names. */
+body:not([data-ds-dark-theme]) [data-chat-flow] {
+  --dsw-alias-markdown-code-block: var(--dsw-static-neutral-bluish-00);
+}
 /* Dark theme: the markdown content root (the css.markdown surface of
    MarkdownText) drops its label-primary body color to label-secondary so the
    assistant prose reads one step quieter against the deeper neon backdrop. */
