@@ -10,6 +10,11 @@
  * error/retry; seat menu inline error) without forking the state. Addressed
  * subagent sessions expose neither entry because those Agent-bound RPCs would
  * activate persisted history outside the direct-parent continuation path.
+ *
+ * Alongside the model picker, the plugin also mounts an ambient neon-glow
+ * background (`neon-glow.ts`): a fixed decorative layer of stacked soft color
+ * pools behind the app, keyed off the body dark-theme flag so the glow is
+ * vivid on dark and a faint tint on light.
  */
 // Type-only: the carrier types, the forwarded Host-event face and the ctx.remote merge.
 import type { ModelSelection, SessionModels } from '@deepseek-ai/dsh-api-remotes/client'
@@ -24,6 +29,7 @@ import type { ModelDirectoryState } from './directory.ts'
 import { ModelDirectoryResolver } from './service.ts'
 import type { ModelSelectInjected } from './slots.ts'
 import { ModelSelect } from './ModelSelect.tsx'
+import { applyNeonGlow } from './neon-glow.ts'
 import { en, zh, type ModelKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -100,6 +106,11 @@ export const inject = ['commandUi', 'connection', 'locale', 'sessions', 'slots',
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
+  // Ambient neon-glow background: pure decorative chrome mounted with the
+  // plugin and disposed with it. No data, no slots — it renders nothing
+  // model-visible.
+  ctx.effect(() => applyNeonGlow(), 'dsh-ui-interaction: neon-glow background')
+
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-ui-interaction: dictionaries')
 
   // Non-slot faces (the command description, the popup option builder) read

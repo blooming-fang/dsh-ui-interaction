@@ -6,7 +6,9 @@
 
 **这是一个 dsh web 交互界面的优化集合包**，而不是单个小补丁。它会以「一个 patch 层 + 一个浏览器端插件」的整体形态，逐步叠加多个交互优化。所有优化共享同一套基础结构（`dsh.bundle.patch` 补丁层 + `dsh.client` 浏览器端 + 自包含源码 + 构建/打包流水线），并通过 `cordis.patch.yml` 覆盖/替换内置表面。
 
-**当前已实现的功能**：**模型选择器优化** —— 把 composer 的模型选择从「单一按提供商分组的大列表」改成「先提供商、后模型」的两级下钻。
+**当前已实现的功能**：
+1. **模型选择器优化** —— 把 composer 的模型选择从「单一按提供商分组的大列表」改成「先提供商、后模型」的两级下钻。
+2. **霓虹氛围背景光晕** —— 为整个 GUI 页面背景叠加多层彩色光晕（紫/蓝/青/品红），亮/暗主题分别给出合适的强度。
 
 **后续规划**：在本包内继续增加其它交互优化。每个新优化应遵循下文「新增一个优化功能」的流程，并与现有功能在同一 patch 层内共处。
 
@@ -18,6 +20,21 @@
 - 本包的 `cordis.patch.yml` **禁用**内置的 `ui-model-selection` 行并**插入**本包自己的行。安装后它完全替换内置表面；不会同时启用内置包（两者会在同一 slot 上冲突）。
 - 内置 workspace 包只在「共享目录语义」这个意义上保持行为同步；**不要**在这里依赖 workspace 包。
 
+## 当前功能：霓虹氛围背景光晕
+
+`dsh-ui-interaction` 还在浏览器端挂载一层**霓虹氛围背景光晕**（`neon-glow.ts`），作为纯装饰性的全屏背景层，不与任何 slot 或数据交互。
+
+- **挂载方式** —— `apply` 通过 `ctx.effect` 调用 `applyNeonGlow()`，创建固定、透明不拦点击的背景层（`position: fixed; z-index: 0; pointer-events: none`）并 `prepend` 到 `body`；同时注入全局样式。卸载时随 effect 一起移除。
+- **提升 `#root`** —— 样式把 `#root` 提升到 `z-index: 1` 的独立层叠上下文，确保 app 内容始终压在光晕之上。
+- **多层光晕** —— 四团柔和径向渐变（紫/蓝/青/品红）分布四周，缓慢漂移、缩放。每个光晕的颜色与布局是 `BLOBS` 数组的**单一数据源**，内联为 CSS 变量；样式表只承载通用规则、动画 keyframes 与主题开关。
+- **主题适配** —— 跟随 `body[data-ds-dark-theme]`：暗色主题显示鲜艳霓虹（`--glow-dark`、高不透明度）；亮色主题退成极淡粉彩（`--glow-light`、低不透明度）。
+- **无障碍** —— 尊重 `prefers-reduced-motion`，减弱动画时仅保留静态光晕。
+
+**不可回退的不变量**：
+- 光晕层必须 `pointer-events: none`，绝不能拦截任何点击。
+- `#root` 必须被提升到光晕之上；否则内容会被装饰层盖住。
+- 这是纯装饰：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
+
 ## 目录结构
 
 ```
@@ -26,12 +43,13 @@ dsh-ui-interaction/
 ├── cordis.patch.yml      # 组合层：禁用 ui-model-selection，插入本包行
 ├── src/
 │   ├── index.ts          # 节点端 — 有意为空（纯浏览器 UI）
-│   └── client/           # 浏览器端（模型选择表面）
-│       ├── index.ts      # apply()：服务 + /model popup + composer 席位
+│   └── client/           # 浏览器端（模型选择表面 + 霓虹背景光晕）
+│       ├── index.ts      # apply()：服务 + /model popup + composer 席位 + 光晕挂载
 │       ├── service.ts    # ModelDirectoryResolver（ctx.modelDirectories）
 │       ├── directory.ts  # 按会话的 ModelDirectory store
 │       ├── slots.ts      # 席位的注入面类型
 │       ├── locales.ts    # `model` 命名空间字典
+│       ├── neon-glow.ts  # 霓虹背景光晕层与全局样式
 │       ├── ModelSelect.tsx        # 两级「提供商 → 模型」席位
 │       └── ModelSelect.module.css
 ├── scripts/
