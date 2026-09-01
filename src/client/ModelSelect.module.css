@@ -156,6 +156,25 @@
   margin-top: 2px;
 }
 
+/* Selected provider in the first drill level: a distinct fill so the active
+   provider is obvious at a glance (matches the current selection's provider
+   as the host reports it). */
+.selectedProvider {
+  background: var(--dsw-alias-interactive-bg-active);
+  color: var(--dsw-alias-label-primary);
+}
+
+.selectedProvider:hover:not(:disabled),
+.selectedProvider:focus-visible {
+  background: var(--dsw-alias-interactive-bg-active);
+}
+
+/* Trailing check on the selected provider, mirroring the model rows' marker. */
+.providerCheck {
+  flex: 0 0 auto;
+  color: var(--dsw-alias-label-primary);
+}
+
 /* Breadcrumb back cell atop the models pane: left chevron + provider name,
    returning to the provider list. `flex: 0 0 auto` pins it as a fixed header —
    without it, flex-shrink squeezes the 34px height when the model list below

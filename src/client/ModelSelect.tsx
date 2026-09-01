@@ -309,12 +309,13 @@ export function ModelSelect(
                       type="button"
                       role="menuitemradio"
                       aria-checked={selected}
-                      className={clsx(css.provider, selected && css.selected)}
+                      className={clsx(css.provider, selected && css.selectedProvider)}
                       key={group.id}
                       title={group.name}
                       onClick={() => { openModels(group.id) }}
                     >
                       <span className={css.cellLabel}>{group.name}</span>
+                      {selected && <IconCheckOutline16 className={css.providerCheck} />}
                       <IconChevronRightOutline14 className={css.cellChevron} />
                     </button>
                   )
