@@ -1,16 +1,16 @@
 /**
  * Neon-glow ambient background. A fixed, pointer-transparent layer behind the
  * app (#root is lifted onto its own stacking context so the glow never sits
- * over content) carrying several soft colored radial gradients — purple, blue,
- * cyan, magenta — stacked to read as a neon atmosphere. The body
- * `data-ds-dark-theme` flag drives both strength and palette: the dark theme
- * shows the vivid neon, the light theme a barely-there pastel tint so it
- * cannot overexpose the pale surfaces. Each color pool's layout and colors are
- * inline data (the BLOBS array is the single source); the stylesheet only
- * carries the shared rules, the drift keyframes, and the theme switch. The
- * layers are static DOM (no React, no slot): this is pure decorative chrome
- * that owns no data and renders nothing model-visible, so it mounts through
- * the plugin's own effect and disposes with it.
+ * over content) carrying two soft colored radial gradients — purple and blue —
+ * stacked as a calm neon atmosphere. The body `data-ds-dark-theme` flag drives
+ * both strength and palette: the dark theme shows the neon a little stronger,
+ * the light theme a barely-there pastel tint so it cannot overexpose the pale
+ * surfaces. Each color pool's layout and colors are inline data (the BLOBS
+ * array is the single source); the stylesheet only carries the shared rules,
+ * the drift keyframes, and the theme switch. The layers are static DOM (no
+ * React, no slot): this is pure decorative chrome that owns no data and
+ * renders nothing model-visible, so it mounts through the plugin's own effect
+ * and disposes with it.
  */
 /** The plugin's own element namespace, matching the other surfaces. */
 const PLUGIN_ID = 'dsh-ui-interaction'
@@ -43,16 +43,16 @@ const GLOBAL_CSS = `
 }
 /* The app's base surfaces (AppFrame, conversation root, side panel) paint an
    opaque var(--dsw-alias-bg-base) over the whole viewport, which would bury
-   the ambient layer behind it. Let the glow show through as an atmospheric
-   tint by making those base fills translucent — dark keeps ~58% of its base so
-   the neon reads, light keeps ~92% so it stays a whisper. */
+   the ambient layer behind it. Let the glow show through as a subtle tint by
+   making those base fills translucent — dark keeps ~72% of its base so the
+   neon reads faintly, light keeps ~95% so it stays a whisper. */
 body {
-  --dsh-neon-bg-alpha: 0.92;
-  --dsh-neon-sidebar-alpha: 0.92;
+  --dsh-neon-bg-alpha: 0.95;
+  --dsh-neon-sidebar-alpha: 0.95;
 }
 body[data-ds-dark-theme] {
-  --dsh-neon-bg-alpha: 0.58;
-  --dsh-neon-sidebar-alpha: 0.7;
+  --dsh-neon-bg-alpha: 0.72;
+  --dsh-neon-sidebar-alpha: 0.82;
 }
 body {
   --dsw-alias-bg-base: color-mix(in srgb, var(--dsw-static-neutral-bluish-00) var(--dsh-neon-bg-alpha), transparent);
@@ -68,33 +68,24 @@ body[data-ds-dark-theme] {
   filter: blur(80px);
   will-change: transform, opacity;
   background: radial-gradient(circle, var(--glow-light) 0%, transparent 70%);
-  opacity: 0.16;
+  opacity: 0.1;
 }
-/* Dark theme: a vivid, deeper-palette neon at higher strength. */
+/* Dark theme: a deeper-palette neon, still kept light so it reads as a calm
+   atmosphere rather than a saturated wash. */
 body[data-ds-dark-theme] .dsh-neon-glow-blob {
   background: radial-gradient(circle, var(--glow-dark) 0%, transparent 72%);
-  opacity: 0.55;
+  opacity: 0.32;
 }
 /* Slow drift keeps the atmosphere alive without demanding attention. */
 .dsh-neon-glow-blob:nth-child(1) { animation: dsh-neon-drift-a 26s ease-in-out infinite alternate; }
 .dsh-neon-glow-blob:nth-child(2) { animation: dsh-neon-drift-b 30s ease-in-out infinite alternate; }
-.dsh-neon-glow-blob:nth-child(3) { animation: dsh-neon-drift-c 34s ease-in-out infinite alternate; }
-.dsh-neon-glow-blob:nth-child(4) { animation: dsh-neon-drift-d 28s ease-in-out infinite alternate; }
 @keyframes dsh-neon-drift-a {
   from { transform: translate(0, 0) scale(1); }
-  to { transform: translate(8vw, 6vh) scale(1.15); }
+  to { transform: translate(6vw, 5vh) scale(1.1); }
 }
 @keyframes dsh-neon-drift-b {
-  from { transform: translate(0, 0) scale(1.1); }
-  to { transform: translate(-7vw, 8vh) scale(0.95); }
-}
-@keyframes dsh-neon-drift-c {
-  from { transform: translate(0, 0) scale(0.95); }
-  to { transform: translate(6vw, -7vh) scale(1.12); }
-}
-@keyframes dsh-neon-drift-d {
-  from { transform: translate(0, 0) scale(1.08); }
-  to { transform: translate(-8vw, -5vh) scale(0.98); }
+  from { transform: translate(0, 0) scale(1.05); }
+  to { transform: translate(-6vw, -5vh) scale(0.96); }
 }
 /* Honor reduced-motion: keep the ambient color but drop the drift. */
 @media (prefers-reduced-motion: reduce) {
@@ -111,23 +102,15 @@ interface NeonBlob {
   dark: string
 }
 
-/** The four pools spread around the viewport, purple/blue/cyan/magenta. */
+/** Two pools spread on the diagonal — purple and blue — in the light/dark theme colors (--glow-light/--glow-dark). */
 const BLOBS: readonly NeonBlob[] = [
   {
-    style: { top: '-12%', left: '-10%', width: '46vw', height: '46vw' },
+    style: { top: '-14%', left: '-12%', width: '52vw', height: '52vw' },
     light: '#a78bfa', dark: '#7c3aed',
   },
   {
-    style: { top: '-8%', right: '-12%', width: '42vw', height: '42vw' },
+    style: { bottom: '-16%', right: '-10%', width: '48vw', height: '48vw' },
     light: '#38bdf8', dark: '#2563eb',
-  },
-  {
-    style: { bottom: '-16%', left: '-6%', width: '44vw', height: '44vw' },
-    light: '#22d3ee', dark: '#0891b2',
-  },
-  {
-    style: { bottom: '-12%', right: '-8%', width: '40vw', height: '40vw' },
-    light: '#f472b6', dark: '#db2777',
   },
 ]
 
