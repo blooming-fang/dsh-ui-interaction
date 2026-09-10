@@ -125,12 +125,6 @@ body[data-ds-dark-theme] [class$="_newSession"] {
 body[data-ds-dark-theme] [class$="_newSession"]:hover {
   background: rgba(255, 255, 255, 0.16);
 }
-/* The chat message column (the ChatView .column, identified by the stable
-   data-chat-flow attribute rather than its hashed CSS Module class) tightens
-   its inter-message gap from 16px to 8px so turns sit closer together. */
-[data-chat-flow] {
-  gap: 8px;
-}
 /* User messages: give the user bubble a border one notch darker than the page
    background so it reads as a distinct surface against the neon backdrop.
    data-chat-flow-kind="user" is the stable owner hook (0.1.5 replaced the old
@@ -139,6 +133,15 @@ body[data-ds-dark-theme] [class$="_newSession"]:hover {
    out by refusing any bubble rendered inside a pending-steering row. */
 [data-chat-flow-kind="user"] [class$="_bubble"]:not([data-pending-steering] *) {
   border: 1px solid rgba(15, 23, 42, 0.18);
+}
+/* Collapse the top margin of consecutive visible chat rows. The message column
+   (ChatView .column, the element carrying data-chat-flow) spaces its flow items
+   with a 16px top margin; tighten it to 4px between adjacent visible, non-empty
+   flow items so turns sit closer together. Flow items are pinned by the stable
+   _flowItem class suffix (never the hashed prefix); :not([hidden]) keeps
+   virtualized rows out and the :empty guard skips placeholder rows. */
+[data-chat-flow] > :not([hidden]):not([class$="_flowItem"]:empty) ~ :not([hidden]):not([class$="_flowItem"]:empty) {
+  margin-top: 4px;
 }
 /* Light theme: the code block banner surface of CodeBlock, whose background
    resolves through the --dsl-code-block-banner-background-color custom
@@ -175,10 +178,13 @@ body[data-ds-dark-theme] [data-chat-flow] div[class*="_markdown_"] {
 body:not([data-ds-dark-theme]) [data-chat-flow] [class*="_markdown_"] :not(pre) > code {
   background-color: var(--dsw-static-neutral-bluish-00);
 }
-/* Tighten the markdown h2 margins (32px above 16px below becomes 16px above
-   16px below) so section headings sit closer to the surrounding prose. */
-[data-chat-flow] [class*="_markdown_"] h2 {
-  margin: 16px 0 16px;
+/* Light theme: the presented-file card (dsh-client-ui-deliverables
+   PresentedFileCard, the file cards this turn delivered) drops its
+   neutral-tinted fill to a plain neutral white so the cards read flat against
+   the pale neon backdrop. The card carries the stable data-presented-file
+   attribute — never the hashed prefix of its _file class. */
+body:not([data-ds-dark-theme]) [data-presented-file] {
+  background: var(--dsw-static-neutral-bluish-00);
 }
 /* Honor reduced-motion: keep the ambient color but drop the drift. */
 @media (prefers-reduced-motion: reduce) {
