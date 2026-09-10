@@ -15,11 +15,13 @@
 
 ## 当前功能：两级模型选择（provider → model）
 
-`dsh-ui-interaction` 的浏览器端是内置 `packages/client/ui-model-selection` 表面（composer 的 `conversation.input.model` 席位 + `/model` popupSelect 命令，建立在共享的按会话模型目录之上）的自包含移植，唯一的行为变化是：composer 席位的 Model 下钻现在是**先提供商、再选该提供商的模型**，而不是一个按提供商分组的大列表。
+`dsh-ui-interaction` 的浏览器端是内置 `@deepseek-ai/dsh-client-ui-model-selection` 表面（composer 的 `conversation.input.model` 席位 + `/model` popupSelect 命令，建立在共享的按会话模型目录之上）的自包含移植，唯一的行为变化是：composer 席位的 Model 下钻现在是**先提供商、再选该提供商的模型**，而不是一个按提供商分组的大列表。
 
 - 它接入与内置版本相同的缝隙：`modelDirectories` 服务（`ModelDirectoryResolver`）、`/model` 命令贡献、`conversation.input.model` slot。
+- **数据源（dsh 0.1.5 契约）**：目录不再来自已移除的 `session.models` RPC，而由两者合成 —— 「Host 代次共享目录 `ctx.remote.session.modelCatalog()`」（`catalog.ts` 的 `ModelCatalogDirectory`，一次读取服务全部会话，带 generation 失效）+「本会话持久化的 `modelSelection` projection」（`sessions.binding(id).session.projections.faceOf('modelSelection')`）；提交仍走 `remote.session.selectModel`。两个入口读同一份合成结果。
+- **菜单是 portal**：下拉渲染到 `document.body`（`.menu` 为 `position: fixed`，先以 `visibility: hidden` 在原点量一次真实尺寸，再夹取到视口内）。原因是 composer 轨道会滚动/裁剪绝对定位弹层。触发器留在席位自己的布局里，窄容器（`@container (width <= 360px)`）下标签收起、只留前导图标。键盘（Esc / ↑↓）与失焦关闭同时挂在触发器与 portal 菜单上。
 - 本包的 `cordis.patch.yml` **禁用**内置的 `ui-model-selection` 行并**插入**本包自己的行。安装后它完全替换内置表面；不会同时启用内置包（两者会在同一 slot 上冲突）。
-- 内置 workspace 包只在「共享目录语义」这个意义上保持行为同步；**不要**在这里依赖 workspace 包。
+- **不要**依赖 workspace 包：`D:\plugin\deepseek-harness\packages\client\ui-model-selection` 是 0.1.0-rc.5 的开发副本；对照物是**已安装闭包里的同名包**及其 `lib/types/**/*.d.ts`。
 
 ## 当前功能：霓虹氛围背景光晕
 
@@ -30,7 +32,7 @@
 - **光晕层自备页面背景** —— 光晕层 `background` 即为页面背景：亮色 `#FBFCFE`（非纯白、带淡蓝调）、暗色深灰 `rgb(21,21,23)`；光晕 blob 直接画在这层背景之上。
 - **基础表面透明** —— 用 `!important` 把 `--dsw-alias-bg-base`、`--dsw-specific-sidebar-fill` 覆盖为 `transparent`，让 app 的基础表面（AppFrame、会话根、侧栏）透出光晕层的背景与光晕。`!important` 同时压过 token 样式表与 theme presenter 写的内联 body token。
 - **两色、多光晕、错落大小** —— 紫、蓝两个色调，但以多个尺寸不同的光晕池（56vw ~ 24vw）错落分布四周，缓慢漂移、缩放。每个光晕的颜色与布局是 `BLOBS` 数组的**单一数据源**，内联为 CSS 变量；样式表只承载通用规则、动画 keyframes 与主题开关。
-- **配套表面微调** —— 同属本功能的九处样式调整：composer 输入框卡片（`[data-composer-card]`）去掉 `box-shadow`，使其在霓虹背景下呈扁平；用户消息气泡（`[data-time-hover-root]:not([data-pending-steering]) [class$="_bubble"]`）加一条比背景深的边框，作为清晰的消息边界；暗色主题下 markdown 内容根（MarkdownText 的 `css.markdown` 面）正文颜色从 `--dsw-alias-label-primary` 降为 `--dsw-alias-label-secondary`；亮色主题下代码块头部横幅（CodeBlock 的 `--dsl-code-block-banner-background-color`，经 `.md-code-block` 根覆盖自定义属性）改为 `--dsw-static-neutral-bluish-00`；亮色主题下 markdown 内联代码块（`._markdown_1r4m5_5 :not(pre) > code`）背景改为纯白；亮色主题下聊天内容区（`[data-chat-flow]`）内所有背景用 `--dsw-alias-markdown-code-block` 的表面改为纯白（在容器上覆盖该 token，级联到全部后代，不依赖 hashed 类名）；消息列（ChatView 的 `.column`，以稳定的 `[data-chat-flow]` 属性定位，而非 hashed 类名）条目间距从 16px 收紧为 8px；markdown 的 h2（`._markdown_1r4m5_5 h2`）上边距从 32px 收紧为 16px；左侧侧栏「新会话」按钮（SidebarRoot 的 `.newSession`，以稳定的 `[class$="_newSession"]` 后缀定位，而非 hashed 前缀）改为玻璃拟态样式（半透明磨砂 + `backdrop-filter` 背景模糊 + 内高光与柔影，亮/暗主题分别适配）。
+- **配套表面微调** —— 同属本功能的九处样式调整：composer 输入框卡片（`[data-composer-card]`）去掉 `box-shadow`，使其在霓虹背景下呈扁平；用户消息气泡（`[data-chat-flow-kind="user"] [class$="_bubble"]:not([data-pending-steering] *)`）加一条比背景深的边框，作为清晰的消息边界；暗色主题下 markdown 内容根（MarkdownText 的 `css.markdown` 面，以 `[data-chat-flow] div[class*="_markdown_"]` 定位）正文颜色从 `--dsw-alias-label-primary` 降为 `--dsw-alias-label-secondary`；亮色主题下代码块头部横幅（CodeBlock 的 `--dsl-code-block-banner-background-color`，经 `.md-code-block` 根覆盖自定义属性）改为 `--dsw-static-neutral-bluish-00`；亮色主题下 markdown 内联代码块（`[data-chat-flow] [class*="_markdown_"] :not(pre) > code`）背景改为纯白；亮色主题下聊天内容区（`[data-chat-flow]`）内所有背景用 `--dsw-alias-markdown-code-block` 的表面改为纯白（在容器上覆盖该 token，级联到全部后代，不依赖 hashed 类名）；消息列（ChatView 的 `.column`，以稳定的 `[data-chat-flow]` 属性定位，而非 hashed 类名）条目间距从 16px 收紧为 8px；markdown 的 h2（`[data-chat-flow] [class*="_markdown_"] h2`）上边距从 32px 收紧为 16px；左侧侧栏「新会话」按钮（SidebarRoot 的 `.newSession`，以稳定的 `[class$="_newSession"]` 后缀定位，而非 hashed 前缀）改为玻璃拟态样式（半透明磨砂 + `backdrop-filter` 背景模糊 + 内高光与柔影，亮/暗主题分别适配）。
 - **主题适配** —— 跟随 `body[data-ds-dark-theme]`：暗色主题稍强的霓虹（`--glow-dark`、中等不透明度）；亮色主题极淡的粉彩（`--glow-light`、低不透明度）。整体克制淡雅，避免过曝。
 - **无障碍** —— 尊重 `prefers-reduced-motion`，减弱动画时仅保留静态光晕。
 
@@ -38,7 +40,7 @@
 - 光晕层必须 `pointer-events: none`，绝不能拦截任何点击。
 - `#root` 必须被提升到光晕之上；否则内容会被装饰层盖住。
 - 这是纯装饰：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
-- 配套表面微调的定位必须用稳定的属性/结构选择器（`data-composer-card`、`data-time-hover-root`、`[class$="_bubble"]` 结尾匹配），**不得**依赖每次构建会变的完整 hashed 类名。
+- 配套表面微调的定位必须用稳定的属性/结构选择器（`data-composer-card`、`data-chat-flow`、`data-chat-flow-kind`、`[class$="_bubble"]` / `[class$="_newSession"]` 后缀匹配、`[class*="_markdown_"]` local 名片段匹配），**不得**依赖每次构建会变的完整 hashed 类名。
 - 注入的全局样式里的注释**不得含反引号**（模板字符串会被提前终止，导致构建失败）。
 
 ## 当前功能：品牌改版（branding.ts）
@@ -68,7 +70,9 @@ dsh-ui-interaction/
 │   └── client/           # 浏览器端（模型选择表面 + 霓虹背景光晕）
 │       ├── index.ts      # apply()：服务 + /model popup + composer 席位 + 光晕挂载
 │       ├── service.ts    # ModelDirectoryResolver（ctx.modelDirectories）
-│       ├── directory.ts  # 按会话的 ModelDirectory store
+│       ├── catalog.ts    # ModelCatalogDirectory：Host 代次共享的模型目录
+│       ├── directory.ts  # 按会话的 ModelDirectory store（catalog + projection）
+│       ├── describe.ts   # 行 id 与内置模型描述的本地化（popup 与席位共用）
 │       ├── slots.ts      # 席位的注入面类型
 │       ├── locales.ts    # `model` 命名空间字典
 │       ├── neon-glow.ts  # 霓虹背景光晕层与全局样式
@@ -95,7 +99,7 @@ Esc 逐层返回（models → providers → root → 关闭）。`/model` popup 
 这些是模型选择表面来之不易的行为。回退任一条都会破坏真实会话。
 
 - **两个入口共享一份按会话的目录。** `/model` popup 与 composer 席位通过 `ctx.modelDirectories` 解析同一个 `ModelDirectory`，任一端切换都会反映到另一端。不要分叉状态。
-- **`available` 是 Agent 绑定 RPC 的门槛。** 已寻址 subagent 会话不得暴露任一入口；其目录拒绝加载、选择与重连刷新（`session.models`/`session.selectModel` 会激活持久化的子历史）。
+- **`available` 是 Agent 绑定 RPC 的门槛。** 已寻址 subagent 会话不得暴露任一入口；其目录拒绝加载、选择与重连刷新（`remote.session.selectModel` 与 session binding/projection 订阅会激活持久化的子历史）。
 - **composer block 只跟随 `routable`。** 明确的 `false` 使输入停用；`null`（首次加载前或失败后）不得停用，否则慢 Host 会锁死可用 composer。目录成员关系也不阻断（一条仍在服务、只是不再公布该模型的路由完全可用）。
 - **被拒绝的 SELECTION 通过瞬时 toast 宣告；菜单内 Retry 条只服务于目录 LOAD。** 由 `lastActionRef` 区分。
 - **Esc 先退出最深的窗格。** `models → providers → root → close`。
@@ -140,26 +144,50 @@ pnpm pack
 
 `name` 必须是**安装到 profile `node_modules` 里的完整包说明符**（pnpm 按真实名称链接包）；裸名解析会失败（`ERR_MODULE_NOT_FOUND`）。`check-pack.mjs` 校验 patch 是否引用了包名。
 
+## 目标 dsh 版本（版本对齐）
+
+本包当前对齐 **dsh 0.1.5-rc.1**（`dsh --version`；profile 里 `@deepseek-ai/dsh` 的安装版本）。0.1.5 相对 0.1.0-rc.5 的关键变化（任一条都会让旧 bundle 静默失效）：
+
+- 浏览器 module table 去掉 `@deepseek-ai/dsh-client-runtime`，store 契约搬到 **`@deepseek-ai/dsh-client-store`**（`createSnapshotStore` / `SnapshotStore` / `ObservableSnapshot`，`update(draft)` 为 immer 语义）。旧 bundle 顶层 `require("@deepseek-ai/dsh-client-runtime/client")` 会**在 factory 阶段抛错** —— 整个插件（光晕、品牌、模型选择）一起失效。
+- `session.models` RPC 移除 → `ctx.remote.session.modelCatalog()` + session 的 `modelSelection` projection。
+- `ctx.slots` 现在由 **`@deepseek-ai/dsh-client-ui-renderer/client`** 声明（旧版在 ui-slots）；ui-slots 只剩纯契约类型。
+- 命令贡献的 `description` 从字符串改为 **`() => string`**（每次候选 pass 重新解析）；`ui.popupSelect.options` 多一个 `AbortSignal` 参数。
+- 席位菜单改为 **portal + 固定定位**；旧的行属性 `data-time-hover-root` 消失（助手回合尾改为 `data-actions-reveal`，用户消息用 `data-chat-flow-kind="user"`）。
+- markdown 内容根的 hashed 类名从 `_markdown_1r4m5_5` 变为 `_markdown_kcgor_5` 之类：**不要写死 hash**，只匹配 local 名片段。
+
+**如何复核对齐（不污染 workspace）**：
+
+1. 在临时目录 `npm i` 一份目标版本的真实类型面包（`@deepseek-ai/dsh-client-store`、`dsh-api-remotes`、`dsh-api-session-controller`、`dsh-client-locale`、`dsh-client-ui-commands`、`dsh-client-ui-conversation`、`dsh-client-ui-input-trigger`、`dsh-client-ui-primitives`、`dsh-client-ui-renderer`、`dsh-client-ui-slots`、`dsh-session`、`dsh-typert-protocol`、`@deepseek-ai/cordis`、`react`/`react-dom`/`@types/*`）。
+2. 把 `src/` 复制进该临时目录，用一个**不继承 workspace `tsconfig.base.json`** 的 tsconfig（`moduleResolution: Bundler`、`allowImportingTsExtensions`、`strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes`、`noUnusedLocals/Parameters`、`noEmit`）跑 `--noEmit`。**必须不继承**：base 的 `paths` 把 `@deepseek-ai/dsh-*` 指向 workspace 的 0.1.0-rc.5 源码，会给出假绿。
+3. 构建不 typecheck（`dts: false`），所以类型只在第 2 步把关；构建后复核实际 external 列表（见下）。
+
 ## 依赖与闭包
 
-所有运行时依赖都是已安装 dsh 闭包运行时上的 peer，并经 profile 的模块回退解析到同一实例；`dsh plugin add` 后无需 `pnpm install`。Peers：`@deepseek-ai/cordis`、`@deepseek-ai/dsh-api-remotes`、`@deepseek-ai/dsh-client-runtime`、`@deepseek-ai/dsh-client-ui-commands`、`@deepseek-ai/dsh-client-ui-conversation`、`@deepseek-ai/dsh-client-ui-primitives`、`@deepseek-ai/dsh-client-ui-slots`、`@deepseek-ai/dsh-client-locale`、`clsx`、`react`。构建期 devDeps：`tsdown`、`typescript`、`lightningcss`、`@types/react`、`@deepseek-ai/*`（用于对照闭包运行时做类型检查）。
+dsh 0.1.5 起，浏览器端的平台模块由**页面 module table**（seed 模块）提供，不再需要把 dsh 包装进 profile 当 peer。因此本包只声明一个 peer（`@deepseek-ai/cordis`），其余 `@deepseek-ai/*` 全部是**构建/类型期 devDeps**，只用于对照目标 dsh 版本的类型面：`dsh-api-remotes`、`dsh-api-session-controller`、`dsh-client-locale`、`dsh-client-store`、`dsh-client-ui-commands`、`dsh-client-ui-conversation`、`dsh-client-ui-input-trigger`、`dsh-client-ui-primitives`、`dsh-client-ui-renderer`、`dsh-client-ui-slots`、`dsh-session`、`dsh-typert-protocol`，外加 `tsdown` / `typescript` / `lightningcss` / `@types/react(-dom)` / `clsx` / `react` / `react-dom`。
 
-> **构建期注意事项（重要）**：浏览器端 externals 必须**只**列 module table 能提供的平台模块（`react`、`react/jsx-runtime`、`@deepseek-ai/cordis`、`@deepseek-ai/dsh-client-ui-primitives`、`@deepseek-ai/dsh-client-ui-slots`，以及 runtime store 豁免 `@deepseek-ai/dsh-client-runtime/client`）。**`clsx` 不是平台模块，必须内联** —— 否则运行时会抛 `require("clsx") missed the module table`（一次真实事故，见安装记录）。
+`dsh.client.inject` 列的是**必须先加载的客户端插件 id**（对应本包 `inject` 需要的服务面）：`@deepseek-ai/dsh-api-remotes`、`@deepseek-ai/dsh-api-session-controller`、`@deepseek-ai/dsh-client-locale`、`@deepseek-ai/dsh-client-ui-commands`。这里**只能**写真的客户端插件：写进去一个纯库（如 `@deepseek-ai/dsh-client-store`）或一个已被移除的包（如 `@deepseek-ai/dsh-client-runtime`），插件 fiber 会永远等待依赖而静默不生效。
+
+> **构建期注意事项（重要）**：浏览器端 externals 必须**只**列 module table 能提供的平台模块。dsh 0.1.5-rc.1 的表为：`react`、`react/jsx-runtime`、`react-dom`、`react-dom/client`、`@deepseek-ai/cordis`、`@deepseek-ai/dsh-client-store`、`@deepseek-ai/dsh-client-ui-slots`、`@deepseek-ai/dsh-client-ui-primitives`、`@deepseek-ai/dsh-client-ui-dockkit`。**`clsx` 不是平台模块，必须内联** —— 否则运行时会抛 `require("clsx") missed the module table`（一次真实事故）。构建后复核：
+
+```sh
+Select-String -Path lib/client.js -Pattern 'require\("([^"]+)"\)' -AllMatches |
+  ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
+```
 
 ## 打包、安装、发布
 
 ```sh
 # 构建 + 打包（prepack 运行完整性门槛）
-cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.0.tgz
+cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.4.tgz
 
 # 安装进 web profile（从源码目录或 tgz 路径均可）
 dsh plugin --profile web add D:\path\to\dsh-ui-interaction           # from source dir
-dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.0.tgz
+dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.4.tgz
 dsh plugin --profile web remove dsh-ui-interaction                   # 移除依赖 + 层
 # 安装/移除后重启 `dsh web`
 ```
 
-`package.json` 中 `publishConfig.access` 未设置；仅在真正发布时再添加。**除非明确要求，不要实际 `npm publish`**。不要提交 `.tgz`、`node_modules` 或 `lib/`（均已在 gitignore）；`.npmignore` 额外排除 `scripts/`、`src/` 与 ts 配置。
+`package.json` 中 `publishConfig.access` 未设置；仅在真正发布时再添加。**除非明确要求，不要实际 `npm publish`**。不要提交 `.tgz` 与 `node_modules`（已在 gitignore）；**`lib/` 是被 git 跟踪的**（历史如此），改完源码必须重新构建并一起提交，否则安装到 profile 的仍是旧 bundle。`.npmignore` 额外排除 `scripts/`、`src/` 与 ts 配置。
 
 ## 编辑本文件
 

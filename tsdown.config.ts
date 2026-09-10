@@ -28,10 +28,13 @@ const CSS_VIRTUAL_SUFFIX = '.mjs'
 
 /**
  * Externals resolved from the loader module table: the platform seed modules
- * (react family, cordis, the dsh client primitives/slots) plus the runtime
- * store exemption. `clsx` is NOT a platform module and must be inlined — the
- * table cannot answer it, so leaving it external throws at factory execution
- * ("require("clsx") missed the module table").
+ * (react family, cordis, the dsh client primitives/slots, and the shared
+ * snapshot-store engine `@deepseek-ai/dsh-client-store`) . `clsx` is NOT a
+ * platform module and must be inlined — the table cannot answer it, so leaving
+ * it external throws at factory execution ("require("clsx") missed the module
+ * table"). dsh 0.1.5 dropped the `@deepseek-ai/dsh-client-runtime/client`
+ * module table entry; the store contracts moved to
+ * `@deepseek-ai/dsh-client-store`.
  */
 const clientExternals = [
   'react',
@@ -39,7 +42,7 @@ const clientExternals = [
   'react-dom',
   'react-dom/client',
   '@deepseek-ai/cordis',
-  '@deepseek-ai/dsh-client-runtime/client',
+  '@deepseek-ai/dsh-client-store',
   '@deepseek-ai/dsh-client-ui-primitives',
   '@deepseek-ai/dsh-client-ui-slots',
 ]

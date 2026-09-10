@@ -6,13 +6,21 @@
  * an unset trigger are free to diverge per locale, and folding it into
  * `trigger.aria` would announce the degenerate "Select model, current Select
  * model".
+ *
+ * `option.deepseekV4Flash.description` / `option.deepseekV4Pro.description`
+ * translate the two built-in provider descriptions the Host advertises in
+ * English; the menu shows the localized copy only while the advertised text is
+ * still the built-in one (see `descriptionOf` in index.ts).
  */
 
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
   'command.description': '选择本会话使用的模型',
   'option.loadError': '目录加载失败：{message}',
+  'option.deepseekV4Flash.description': '快速、高效且经济；适合目标明确、常规或并行任务。',
+  'option.deepseekV4Pro.description': '更强的自主编码、知识与复杂推理能力；适合复杂或质量优先的任务，但成本更高。',
   'trigger.fallback': '选择模型',
+  'trigger.loading': '正在加载模型…',
   'trigger.selectAria': '选择模型',
   'trigger.aria': '选择模型，当前 {model}',
   'trigger.ariaEffort': '选择模型，当前 {model}，推理等级 {effort}',
@@ -37,7 +45,10 @@ export type ModelKey = keyof typeof zh
 export const en = {
   'command.description': 'Select the model for this conversation',
   'option.loadError': 'Catalog failed to load: {message}',
+  'option.deepseekV4Flash.description': 'Fast, efficient, and economical; suited to focused, routine, or parallel tasks.',
+  'option.deepseekV4Pro.description': 'Stronger agentic coding, knowledge, and difficult reasoning; suited to complex or quality-critical tasks at higher cost.',
   'trigger.fallback': 'Select model',
+  'trigger.loading': 'Loading models…',
   'trigger.selectAria': 'Select model',
   'trigger.aria': 'Select model, current {model}',
   'trigger.ariaEffort': 'Select model, current {model}, reasoning effort {effort}',

@@ -4,14 +4,18 @@
  * and the composer model seat) resolve their session's directory through
  * this service, which is what makes the dual entry one shared state.
  *
+ * Since dsh 0.1.5 the Host-generation model catalog is owned here too (one
+ * shared read for every Session), and each session directory is composed from
+ * that catalog plus the session's own `modelSelection` projection.
+ *
  * Per-session storage follows the client service pattern (InputTriggerService /
  * CommandUiRuntime): a lazy service-internal map whose entry is deleted by the
  * owning scope's disposer.
  */
 import { Service } from '@deepseek-ai/cordis'
 import type { Context } from '@deepseek-ai/cordis'
-import type { ConnectionHandle, SessionId } from '@deepseek-ai/dsh-api-remotes/client'
-import type { SessionRuntime } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import { ModelCatalogDirectory } from './catalog.ts'
 import { ModelDirectory } from './directory.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -28,9 +32,12 @@ interface LiveState {
 
 /** The `ctx.modelDirectories` session model-selection service. */
 export class ModelDirectoryResolver extends Service {
-  static inject = ['connection', 'sessions', 'remote']
+  static inject = ['sessions', 'remote', 'remote.session']
 
   private readonly live: LiveState = { directories: new Map() }
+
+  /** The Host generation's advisory catalog, shared by every session directory. */
+  private readonly catalog: ModelCatalogDirectory
 
   /** Localized composer-block copy; this plugin owns the string it raises. */
   private readonly blockReason: () => string
@@ -42,18 +49,20 @@ export class ModelDirectoryResolver extends Service {
   constructor(ctx: Context, config: { blockReason: () => string }) {
     super(ctx, 'modelDirectories')
     this.blockReason = config.blockReason
+    this.catalog = new ModelCatalogDirectory(ctx)
+    // Eager first read: the seat's trigger label and the composer block both
+    // resolve without the user opening a menu.
+    this.catalog.load().catch(() => { /* the next explicit menu read remains the retry surface */ })
     ctx.on('connection/reset', () => {
+      this.catalog.resetGeneration()
       for (const directory of this.live.directories.values()) directory.resetConnected()
     })
-    // Either source can change the directory: registry topology commits and
-    // settings documents that carry provider catalogs or default selection.
-    const refresh = (): void => {
-      for (const directory of this.live.directories.values()) {
-        directory.load().catch(() => undefined)
-      }
-    }
-    ctx.remote.$on('llm/adapters-updated', refresh)
-    ctx.remote.$on('settings/document-updated', refresh)
+    // Any Host-side model input invalidates the shared catalog: registry
+    // topology commits, settings documents carrying provider catalogs or the
+    // default selection, and credential references.
+    ctx.remote.$on('llm/adapters-updated', () => { this.catalog.refresh() })
+    ctx.remote.$on('settings/document-updated', () => { this.catalog.refresh() })
+    ctx.remote.$on('credentials/reference-updated', () => { this.catalog.refresh() })
   }
 
   /**
@@ -66,14 +75,17 @@ export class ModelDirectoryResolver extends Service {
     const { live } = this
     const existing = live.directories.get(sessionId)
     if (existing !== undefined) return existing
-    const sessions = this.ctx.get('sessions') as SessionRuntime
+    const sessions = this.ctx.sessions
     const actx = sessions.scope(sessionId)
     if (actx === undefined) throw new Error(`dsh-ui-interaction: session "${String(sessionId)}" resolved no scope`)
-    const connection = this.ctx.get('connection') as ConnectionHandle
+    const binding = sessions.binding(sessionId)
+    if (binding === undefined) throw new Error(`dsh-ui-interaction: session "${String(sessionId)}" resolved no binding`)
     const directory = new ModelDirectory(
-      connection.api.sessions,
+      this.ctx.remote.session,
       sessionId,
       () => sessions.subagentAddress(sessionId) === undefined,
+      this.catalog,
+      binding.session.projections.faceOf('modelSelection'),
     )
     live.directories.set(sessionId, directory)
     // The composer cannot read this plugin (the dependency runs one way), so

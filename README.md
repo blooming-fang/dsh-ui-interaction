@@ -13,6 +13,10 @@
 
 Esc 逐层返回（模型 → 提供商 → 根 → 关闭）。`/model` 命令与推理等级下钻保持不变。
 
+菜单渲染在 `document.body` 上（`position: fixed`，先以隐藏态量一次真实尺寸再夹取到视口内），因为 composer 轨道会滚动并裁剪绝对定位的弹层；窄容器下触发器收起文字、只留前导图标。
+
+> 当前对齐 **dsh 0.1.5-rc.1**：目录来自 Host 代次共享的 `modelCatalog` + 本会话持久化的 `modelSelection` projection，提交走 `remote.session.selectModel`。详见 [AGENTS.md](AGENTS.md#目标-dsh-版本版本对齐)。
+
 ### 霓虹氛围背景光晕
 
 为整个 GUI 页面背景叠加**多个大小不一的柔和彩色光晕**（仅紫、蓝两色），营造克制的霓虹氛围，并让页面不再是纯白。光晕是固定、透明不拦点击的装饰层，铺在 app 内容之下（`#root` 被提升到光晕之上）。
@@ -51,14 +55,16 @@ dsh plugin --profile web add dsh-ui-interaction
 
 ## 工作原理
 
-本包是一个双面（dual-face）包：其 `cordis.patch.yml` 禁用被替换的内置表面行（当前为 `ui-model-selection`）并插入本包自己的行；`dsh.client` 浏览器端在同一 slot/命令上提供替换实现。就当前模型选择器而言：两个入口（composer 席位与 `/model`）共享一份按会话的模型目录（`session.models` / `session.selectModel`），任一端做出的切换都会反映到另一端——语义与内置版本一致。
+本包是一个双面（dual-face）包：其 `cordis.patch.yml` 禁用被替换的内置表面行（当前为 `ui-model-selection`）并插入本包自己的行；`dsh.client` 浏览器端在同一 slot/命令上提供替换实现。就当前模型选择器而言：两个入口（composer 席位与 `/model`）共享一份按会话的模型目录——由「Host 代次共享的模型目录 `remote.session.modelCatalog()`」与「本会话持久化的 `modelSelection` projection」合成，提交走 `remote.session.selectModel`；任一端做出的切换都会反映到另一端，语义与内置版本一致。
 
 霓虹光晕背景则是纯装饰层：浏览器端 `apply` 挂载一个固定的全屏层与全局样式，随插件生命周期挂载/卸载，不接入任何 slot 或数据。光晕层自备页面背景（亮色 `#FBFCFE` / 暗色深灰）并叠加紫蓝光晕；它通过 `!important` 覆盖 `--dsw-alias-bg-base`、`--dsw-specific-sidebar-fill` 为透明，让 app 的基础表面透出这层背景与光晕，并顺带处理 composer 输入框阴影与用户消息边框这两处表面微调。
 
 ## 开发者
 
-- `src/client/ModelSelect.tsx` —— 两级「提供商 → 模型」席位组件。
+- `src/client/ModelSelect.tsx` —— 两级「提供商 → 模型」席位组件（菜单 portal 到 `document.body`）。
 - `src/client/directory.ts` 与 `service.ts` —— 共享的按会话目录与 `modelDirectories` 服务。
+- `src/client/catalog.ts` —— Host 代次共享的模型目录（`remote.session.modelCatalog()`）。
+- `src/client/describe.ts` —— 行 id 与内置模型描述的本地化。
 - `src/client/neon-glow.ts` —— 霓虹背景光晕层与全局样式。
 - `cordis.patch.yml` —— 禁用被替换表面并插入本包的层。
 - 参见 [AGENTS.md](AGENTS.md) 了解包契约、不可回退的不变量与新增功能的流程。
@@ -71,7 +77,7 @@ dsh plugin --profile web add dsh-ui-interaction
 cd plugins/dsh-ui-interaction
 pnpm install && pnpm run build
 npm pack
-# 生成 dsh-ui-interaction-0.1.0.tgz
+# 生成 dsh-ui-interaction-0.1.4.tgz
 ```
 
 在中文 Windows（ANSI 代码页 936）上，构建需强制使用 UTF-8；`scripts/build.mjs` 会自动处理。参见 [AGENTS.md](AGENTS.md#构建与编码)。

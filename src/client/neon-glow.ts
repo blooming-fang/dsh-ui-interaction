@@ -133,8 +133,11 @@ body[data-ds-dark-theme] [class$="_newSession"]:hover {
 }
 /* User messages: give the user bubble a border one notch darker than the page
    background so it reads as a distinct surface against the neon backdrop.
-   :not([data-pending-steering]) keeps the pending steering projection out. */
-[data-time-hover-root]:not([data-pending-steering]) [class$="_bubble"] {
+   data-chat-flow-kind="user" is the stable owner hook (0.1.5 replaced the old
+   data-time-hover-root row attribute with data-actions-reveal, which only marks
+   the assistant turn tail); the :not() keeps the pending steering projection
+   out by refusing any bubble rendered inside a pending-steering row. */
+[data-chat-flow-kind="user"] [class$="_bubble"]:not([data-pending-steering] *) {
   border: 1px solid rgba(15, 23, 42, 0.18);
 }
 /* Light theme: the code block banner surface of CodeBlock, whose background
@@ -154,21 +157,27 @@ body:not([data-ds-dark-theme]) .md-code-block {
 body:not([data-ds-dark-theme]) [data-chat-flow] {
   --dsw-alias-markdown-code-block: var(--dsw-static-neutral-bluish-00);
 }
-/* Dark theme: the markdown content root (the css.markdown surface of
-   MarkdownText) drops its label-primary body color to label-secondary so the
-   assistant prose reads one step quieter against the deeper neon backdrop. */
-body[data-ds-dark-theme] ._markdown_1r4m5_5 {
+/* The markdown content root carries no stable attribute, so it is matched by
+   the local-name segment of its hashed CSS Module class ("<hash>_markdown_<n>",
+   which lightningcss derives from the local name). The hash itself is never
+   named, and the selector stays valid across builds. The file-type classes of
+   the same local name sit on icon elements, so the content root is pinned to a
+   DIV and scoped to the chat content area. */
+/* Dark theme: that root drops its label-primary body color to label-secondary
+   so the assistant prose reads one step quieter against the deeper neon
+   backdrop. */
+body[data-ds-dark-theme] [data-chat-flow] div[class*="_markdown_"] {
   color: var(--dsw-alias-label-secondary);
 }
 /* Light theme: inline code (the .markdown :not(pre) > code chips, scoped to
    the markdown content root) drops its background to a pure neutral white so
    the chips read flat against the pale neon backdrop instead of tinting. */
-body:not([data-ds-dark-theme]) ._markdown_1r4m5_5 :not(pre) > code {
+body:not([data-ds-dark-theme]) [data-chat-flow] [class*="_markdown_"] :not(pre) > code {
   background-color: var(--dsw-static-neutral-bluish-00);
 }
 /* Tighten the markdown h2 margins (32px above 16px below becomes 16px above
    16px below) so section headings sit closer to the surrounding prose. */
-._markdown_1r4m5_5 h2 {
+[data-chat-flow] [class*="_markdown_"] h2 {
   margin: 16px 0 16px;
 }
 /* Honor reduced-motion: keep the ambient color but drop the drift. */

@@ -10,18 +10,28 @@
  * from the Host rather than a client-owned vocabulary. A rejected selection
  * announces through the shared transient Toast anchored to the composer
  * card; the in-menu strip with Retry remains the catalog-load surface.
+ *
+ * The menu is portaled to `document.body` at a fixed, viewport-clamped
+ * position (measured through a hidden first pass), because the composer rail
+ * can scroll and clip an absolutely positioned popup. Only the trigger stays
+ * in the seat's own layout, so the trigger is what the seat's width drives:
+ * in a narrow rail the label collapses into a leading icon.
  */
 import {
-  useEffect, useId, useMemo, useRef, useState, useSyncExternalStore,
-  type KeyboardEvent, type FocusEvent,
+  useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore,
+  type CSSProperties, type FocusEvent, type KeyboardEvent,
 } from 'react'
+import { createPortal } from 'react-dom'
 import clsx from 'clsx'
-import type { ModelReasoningEffort, ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
+import type {
+  ModelProviderGroup, ModelReasoningEffort, ModelSelection,
+} from '@deepseek-ai/dsh-api-session-controller/types'
 import {
   IconCheckOutline16, IconChevronDownOutline14, IconChevronLeftOutline14, IconChevronRightOutline14,
-  IconWarningOutline16, Toast,
+  IconDataOutline16, IconWarningOutline16, Toast,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import { descriptionOf } from './describe.ts'
 import type { ModelSelectInjected } from './slots.ts'
 import css from './ModelSelect.module.css'
 
@@ -35,6 +45,12 @@ interface EffortChoice {
   label: string
   description?: string
 }
+
+/** Unplaced portal card: hidden but laid out at a fixed origin so offsetWidth/offsetHeight are real (the menu's measure pass). */
+const MEASURE_STYLE: CSSProperties = { visibility: 'hidden', left: 0, top: 0 }
+
+/** Closest the placed menu may sit to any viewport edge. */
+const MENU_MARGIN = 12
 
 /**
  * Render the composer model seat.
@@ -64,10 +80,12 @@ export function ModelSelect(
   const toastSeq = useRef(0)
   const rootRef = useRef<HTMLDivElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+  const [menuPos, setMenuPos] = useState<{ left: number; top: number } | null>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
   const id = useId()
 
-  const choices = useMemo(() => state.groups.flatMap(group =>
+  const choices = useMemo(() => state.groups.flatMap((group: ModelProviderGroup) =>
     group.models.map(model => ({
       group,
       model,
@@ -110,22 +128,44 @@ export function ModelSelect(
     load()
   }
 
-  // Mount-time load resolves the trigger label; every open refreshes.
-  useEffect(() => {
-    if (available) {
-      lastActionRef.current = 'load'
-      load()
-    }
-  }, [available, load])
-
   useEffect(() => {
     if (!open) return
+    // The menu is portaled outside the trigger's subtree, so both containers
+    // count as "inside" for dismissal.
     const closeOutside = (event: MouseEvent): void => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+      if (rootRef.current?.contains(event.target as Node) === true) return
+      if (menuRef.current?.contains(event.target as Node) === true) return
+      setOpen(false)
     }
     document.addEventListener('mousedown', closeOutside)
     return () => { document.removeEventListener('mousedown', closeOutside) }
   }, [open])
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuPos(null)
+      return
+    }
+    const place = (): void => {
+      const rect = triggerRef.current?.getBoundingClientRect()
+      if (rect === undefined) return
+      const width = menuRef.current?.offsetWidth ?? 0
+      const height = menuRef.current?.offsetHeight ?? 0
+      // Anchored to the trigger's right edge, opening upward above it.
+      let x = rect.right - width
+      let y = rect.top - 8 - height
+      if (width > 0) x = Math.min(Math.max(x, MENU_MARGIN), window.innerWidth - width - MENU_MARGIN)
+      if (height > 0) y = Math.min(Math.max(y, MENU_MARGIN), window.innerHeight - height - MENU_MARGIN)
+      setMenuPos({ left: x, top: y })
+    }
+    place()
+    window.addEventListener('scroll', place, true)
+    window.addEventListener('resize', place)
+    return () => {
+      window.removeEventListener('scroll', place, true)
+      window.removeEventListener('resize', place)
+    }
+  }, [open, pane, state])
 
   if (!available) return null
 
@@ -168,7 +208,11 @@ export function ModelSelect(
   }
 
   const onBlur = (event: FocusEvent<HTMLDivElement>): void => {
-    if (event.relatedTarget instanceof Node && rootRef.current?.contains(event.relatedTarget)) return
+    // The portaled menu is a second focus container of the same widget.
+    if (event.relatedTarget instanceof Node) {
+      if (rootRef.current?.contains(event.relatedTarget) === true) return
+      if (menuRef.current?.contains(event.relatedTarget) === true) return
+    }
     close()
   }
 
@@ -208,13 +252,22 @@ export function ModelSelect(
     void select(selection).then(settleSelection)
   }
 
-  const modelLabel = currentChoice?.model.name ?? t('trigger.fallback')
+  // Before the first catalog frame resolves there is no selection to name: say
+  // so rather than showing the empty-selection prompt. A selection whose exact
+  // route left the advisory groups still has a name — the Host's own ids.
+  const waiting = state.current === null && state.status === 'loading'
+  const modelLabel = waiting
+    ? t('trigger.loading')
+    : currentChoice?.model.name
+      ?? (state.current === null ? t('trigger.fallback') : `${state.current.provider}/${state.current.model}`)
   const triggerLabel = effortLabel === undefined ? modelLabel : `${modelLabel} · ${effortLabel}`
-  const triggerAria = currentChoice === undefined
-    ? t('trigger.selectAria')
-    : effortLabel === undefined
-      ? t('trigger.aria', { model: modelLabel })
-      : t('trigger.ariaEffort', { model: modelLabel, effort: effortLabel })
+  const triggerAria = waiting
+    ? t('trigger.loading')
+    : state.current === null
+      ? t('trigger.selectAria')
+      : effortLabel === undefined
+        ? t('trigger.aria', { model: modelLabel })
+        : t('trigger.ariaEffort', { model: modelLabel, effort: effortLabel })
   const activeGroup = activeGroupId === null
     ? undefined
     : state.groups.find(group => group.id === activeGroupId)
@@ -253,18 +306,23 @@ export function ModelSelect(
           }
         }}
       >
+        <IconDataOutline16 className={css.triggerIcon} size={16} />
         <span className={css.triggerLabel}>{modelLabel}</span>
         {effortLabel !== undefined && <span className={css.triggerEffort}>{effortLabel}</span>}
         <IconChevronDownOutline14 className={clsx(css.chevron, open && css.chevronOpen)} />
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
+          ref={menuRef}
           id={`${id}-menu`}
           className={css.menu}
+          style={menuPos ?? MEASURE_STYLE}
           role="menu"
           aria-label={t('menu.aria')}
           aria-busy={state.status === 'loading' || busy}
+          onKeyDown={onRootKeyDown}
+          onBlur={onBlur}
         >
           {pane === 'root' && (
             <>
@@ -291,13 +349,13 @@ export function ModelSelect(
               {state.error !== null && lastActionRef.current === 'load' && (
                 <div className={css.error}>
                   <span>{t('error.action', { message: state.error })}</span>
-                  <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
+                  <button type="button" className={css.retry} onClick={reload}>{t('action.reload')}</button>
                 </div>
               )}
               {state.failures.map(failure => (
                 <div className={css.warning} key={failure.id}>
                   <span>{t('warning.groupLoad', { name: failure.name, message: failure.message })}</span>
-                  <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
+                  <button type="button" className={css.retry} onClick={reload}>{t('action.reload')}</button>
                 </div>
               ))}
               <div className={clsx(css.groups, 'scrollable')}>
@@ -342,6 +400,7 @@ export function ModelSelect(
               <div className={clsx(css.groups, 'scrollable')}>
                 {activeGroup.models.map((model) => {
                   const selected = state.current?.provider === activeGroup.id && state.current.model === model.id
+                  const description = descriptionOf(activeGroup.id, model, t)
                   return (
                     <button
                       ref={itemRef()}
@@ -356,8 +415,8 @@ export function ModelSelect(
                     >
                       <span className={css.optionCopy}>
                         <span className={css.modelName}>{model.name}</span>
-                        {model.description !== undefined && (
-                          <span className={css.description}>{model.description}</span>
+                        {description !== undefined && (
+                          <span className={css.description}>{description}</span>
                         )}
                       </span>
                       <span className={css.check}>
@@ -407,14 +466,16 @@ export function ModelSelect(
                 ))}
             </>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
+
       {toast !== null && (
         <Toast
           key={toast.seq}
           text={toast.text}
           icon={<IconWarningOutline16 />}
-          anchor={rootRef.current?.closest<HTMLElement>('[data-composer-card]') ?? null}
+          anchor={rootRef.current?.closest('[data-composer-card]') ?? null}
           onDone={() => { setToast(null) }}
         />
       )}

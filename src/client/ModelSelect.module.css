@@ -10,7 +10,9 @@
   align-items: center;
   gap: 4px;
   min-width: 0;
-  max-width: 220px;
+  /* Half the input rail, or the viewport-derived fallback when no container
+     ancestor declares one. */
+  max-width: min(360px, 45cqw);
   height: 28px;
   padding: 0 4px 0 8px;
   border: none;
@@ -44,14 +46,36 @@
   white-space: nowrap;
 }
 
-/* Effort value beside the model name (caption tone). */
+/* Effort value beside the model name (caption tone). Shrinks before the model
+   name does: both matter, the name matters more. */
 .triggerEffort {
-  flex: 0 0 auto;
+  flex-shrink: 1000;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--dsw-alias-label-caption);
 }
 
+/* Leading icon, used only where there is no room for the labels. */
+.triggerIcon {
+  display: none;
+  flex: none;
+}
+
+@container (width <= 360px) {
+  .triggerIcon {
+    display: block;
+  }
+
+  .triggerLabel,
+  .triggerEffort {
+    display: none;
+  }
+}
+
 .chevron {
-  flex: 0 0 auto;
+  flex: none;
   color: var(--dsw-alias-label-caption);
   transition: transform 120ms ease;
 }
@@ -60,22 +84,26 @@
   transform: rotate(180deg);
 }
 
+/* Portaled to the body and positioned by the component (fixed, clamped to the
+   viewport); the composer rail can scroll and clip an absolute popup. */
 .menu {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 8px);
-  z-index: 20;
+  position: fixed;
+  z-index: 1100;
   display: flex;
   flex-direction: column;
-  width: min(240px, calc(100vw - 32px));
-  max-height: min(360px, calc(100vh - 96px));
+  width: max-content;
+  min-width: min(240px, 100vw - 32px);
+  max-width: min(420px, 100vw - 32px);
+  max-height: min(360px, 100vh - 96px);
   overflow: hidden;
   padding: 4px;
-  border: 1px solid var(--dsw-alias-border-inverted);
-  border-radius: 12px;
+  border: 0;
+  border-radius: 20px;
   background: var(--dsw-specific-menu);
-  box-shadow: var(--dsw-shadow-lv3);
+  box-shadow: var(--dsw-elevation-prominent);
   color: var(--dsw-alias-label-primary);
+  /* The elevation ring takes the l1 border tone on this surface. */
+  --dsw-elevation-stroke-color: var(--dsw-alias-border-l1);
   /* Elevated surface: the scrollbar thumb takes the l2 elevation tokens. */
   --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
   --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
@@ -110,7 +138,7 @@
 }
 
 .retry {
-  flex: 0 0 auto;
+  flex: none;
   padding: 0;
   border: none;
   background: transparent;
@@ -121,7 +149,6 @@
 }
 
 .groups {
-  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
 }
@@ -129,10 +156,12 @@
 /* Provider rows in the first drill level: a cell holding the group name and
    a right chevron into that provider's models. */
 .provider {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
+  width: auto;
+  min-width: 100%;
   min-height: 38px;
   padding: 6px 8px;
   border: none;
@@ -171,7 +200,7 @@
 
 /* Trailing check on the selected provider, mirroring the model rows' marker. */
 .providerCheck {
-  flex: 0 0 auto;
+  flex: none;
   color: var(--dsw-alias-label-primary);
 }
 
@@ -204,15 +233,17 @@
 }
 
 .backChevron {
-  flex: 0 0 auto;
+  flex: none;
   color: inherit;
 }
 
 .option {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
+  width: auto;
+  min-width: 100%;
   min-height: 38px;
   padding: 6px 8px;
   border: none;
@@ -256,7 +287,10 @@
   white-space: nowrap;
 }
 
+/* Model / effort prose under the name. Bounded so a long description cannot
+   stretch the max-content menu to its 420px cap. */
 .description {
+  max-width: 300px;
   overflow: hidden;
   color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
@@ -276,10 +310,12 @@
    14/22 label in primary, value in the tertiary tone, right chevron drilling
    into the sub-list. */
 .cell {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
+  width: auto;
+  min-width: 100%;
   height: 40px;
   padding: 0 10px;
   border: none;
@@ -304,6 +340,12 @@
   white-space: nowrap;
 }
 
+/* Inside a root cell the label names the dimension and never truncates; the
+   value absorbs the slack and gives way instead. */
+.cell .cellLabel {
+  flex: none;
+}
+
 .cellValue {
   flex: 0 1 auto;
   min-width: 0;
@@ -313,7 +355,12 @@
   color: var(--dsw-alias-label-tertiary);
 }
 
+.cell .cellValue {
+  flex: auto;
+  text-align: right;
+}
+
 .cellChevron {
-  flex: 0 0 auto;
+  flex: none;
   color: var(--dsw-alias-label-tertiary);
 }
