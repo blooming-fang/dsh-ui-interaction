@@ -9,7 +9,7 @@
 **当前已实现的功能**：
 1. **模型选择器优化** —— 把 composer 的模型选择从「单一按提供商分组的大列表」改成「先提供商、后模型」的两级下钻。
 2. **霓虹氛围背景光晕** —— 为整个 GUI 页面背景叠加多个大小不一的柔和彩色光晕（仅紫、蓝两色），并自备非纯白页面背景（亮色 `#FBFCFE` / 暗色深灰），同时配套调整 composer 输入框（去阴影）与用户消息气泡（加深边框）两处表面。亮/暗主题分别给出合适的强度（整体克制淡雅）。
-3. **品牌改版** —— 去掉 DeepSeek 的鲸鱼/鱼形 logo（品牌文字保持不变）：隐藏侧栏 wordmark、新会话英雄区与折叠侧栏的鱼形 logo。
+3. **品牌改版** —— 去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**：隐藏 `FishLogo`（侧栏品牌 mark slot 的折叠态工具栏与展开态头部、新会话英雄区的动态鱼形头图），保留侧栏 `sidebar.brand.name` 的无 logo wordmark 文字。
 
 **后续规划**：在本包内继续增加其它交互优化。每个新优化应遵循下文「新增一个优化功能」的流程，并与现有功能在同一 patch 层内共处。
 
@@ -18,7 +18,7 @@
 `dsh-ui-interaction` 的浏览器端是内置 `@deepseek-ai/dsh-client-ui-model-selection` 表面（composer 的 `conversation.input.model` 席位 + `/model` popupSelect 命令，建立在共享的按会话模型目录之上）的自包含移植，唯一的行为变化是：composer 席位的 Model 下钻现在是**先提供商、再选该提供商的模型**，而不是一个按提供商分组的大列表。
 
 - 它接入与内置版本相同的缝隙：`modelDirectories` 服务（`ModelDirectoryResolver`）、`/model` 命令贡献、`conversation.input.model` slot。
-- **数据源（dsh 0.1.5 契约）**：目录不再来自已移除的 `session.models` RPC，而由两者合成 —— 「Host 代次共享目录 `ctx.remote.session.modelCatalog()`」（`catalog.ts` 的 `ModelCatalogDirectory`，一次读取服务全部会话，带 generation 失效）+「本会话持久化的 `modelSelection` projection」（`sessions.binding(id).session.projections.faceOf('modelSelection')`）；提交仍走 `remote.session.selectModel`。两个入口读同一份合成结果。
+- **数据源（dsh 0.1.7 契约）**：目录不再来自已移除的 `session.models` RPC，而由两者合成 —— 「Host 代次共享目录 `ctx.remote.session.modelCatalog()`」（`catalog.ts` 的 `ModelCatalogDirectory`，一次读取服务全部会话，带 generation 失效）+「本会话持久化的 `modelSelection` projection」（`sessions.binding(id).session.projections.faceOf('modelSelection')`）；提交仍走 `remote.session.selectModel`。两个入口读同一份合成结果。`ctx.remote.session` 由 `@deepseek-ai/dsh-api-session-controller/remote` 声明（见下文类型面陷阱）。
 - **菜单是 portal**：下拉渲染到 `document.body`（`.menu` 为 `position: fixed`，先以 `visibility: hidden` 在原点量一次真实尺寸，再夹取到视口内）。原因是 composer 轨道会滚动/裁剪绝对定位弹层。触发器留在席位自己的布局里，窄容器（`@container (width <= 360px)`）下标签收起、只留前导图标。键盘（Esc / ↑↓）与失焦关闭同时挂在触发器与 portal 菜单上。
 - 本包的 `cordis.patch.yml` **禁用**内置的 `ui-model-selection` 行并**插入**本包自己的行。安装后它完全替换内置表面；不会同时启用内置包（两者会在同一 slot 上冲突）。
 - **不要**依赖 workspace 包：`D:\plugin\deepseek-harness\packages\client\ui-model-selection` 是 0.1.0-rc.5 的开发副本；对照物是**已安装闭包里的同名包**及其 `lib/types/**/*.d.ts`。
@@ -45,17 +45,18 @@
 
 ## 当前功能：品牌改版（branding.ts）
 
-`dsh-ui-interaction` 还在浏览器端挂载一层**品牌改版**（`branding.ts`），去掉 DeepSeek 的鲸鱼/鱼形 logo（品牌文字保持不变）。
+`dsh-ui-interaction` 还在浏览器端挂载一层**品牌改版**（`branding.ts`），去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**。
 
 - **挂载方式** —— `apply` 通过 `ctx.effect` 调用 `applyDshBranding()`，注入一段纯 CSS 样式表（与 `applyNeonGlow` 同款模式）；卸载时移除该样式。
-- **稳定 DOM 签名** —— 用 `viewBox` 精确识别两个品牌 SVG，不依赖 hashed 类名：
-  - `BrandWordmark`（`viewBox="0 0 182 24"`，鲸鱼 + deepseek 字母 + HARNESS 徽标）→ `display: none`；
-  - `FishLogo`（`viewBox="0 0 23.16 17.04"`，折叠侧栏工具栏 + 新会话英雄区头图）→ `display: none`。
+- **dsh 0.1.7 的 slot 拆分** —— 品牌区不再是单个整体 SVG：`sidebar.brand.mark`（logo）与 `sidebar.brand.name`（文字）是两个独立 slot，且 `BrandWordmark` 新增 `includeMark` 开关。内置的 `@deepseek-ai/dsh-client-ui-brand-official` 用 `FishLogo` 填 mark slot、用 `includeMark: false` 的 wordmark（`viewBox="26 0 156 24"`）填 name slot。因此「只去 logo、留文字」现在是精确可达的。
+- **稳定 DOM 签名** —— 用 `viewBox` 精确识别 `FishLogo`：`viewBox="0 0 23.16 17.04"` → `display: none`。该签名由 `FISH_LOGO_VIEWBOX`（`{ width: 23.16, height: 17.04 }`）在渲染时以模板字符串拼出，所以 DOM 属性值仍是稳定字面量。**一条规则覆盖全部鱼形标记**：侧栏 mark slot（折叠态工具栏 + 展开态头部）与新会话英雄区的动态鱼形头图（ui-conversation 自己用 `FISH_LOGO_PATH` 组合 svg，但 viewBox 同源）。
+- **不隐藏 `0 0 182 24`** —— 那是 `includeMark: true` 的整块 wordmark（鲸鱼 + 文字）。0.1.7 默认不渲染它，且隐藏它会连品牌文字一起隐藏，与「保留品牌文字」相悖。0.1.5 时代隐藏整块 wordmark 的做法**已废弃**。
 - **React 安全** —— 用 `display: none` 隐藏而非删除节点：删除会让 React 重新创建并顶掉替换内容；纯 CSS 声明式，React 重渲染不会撤销。
 - **纯装饰** —— 不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
 
 **不可回退的不变量**：
-- 定位必须用稳定的 `viewBox` 签名（`0 0 182 24` / `0 0 23.16 17.04`），**不得**依赖每次构建会变的 hashed 类名。
+- 定位必须用稳定的 `viewBox` 签名（`0 0 23.16 17.04`），**不得**依赖每次构建会变的 hashed 类名。
+- 只隐藏 logo；**不得**隐藏 `sidebar.brand.name` 的品牌文字（`26 0 156 24`）。
 - 用 `display: none` 隐藏而非删除节点，避免 React 重新创建。
 - 这是纯装饰：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
 
@@ -76,7 +77,7 @@ dsh-ui-interaction/
 │       ├── slots.ts      # 席位的注入面类型
 │       ├── locales.ts    # `model` 命名空间字典
 │       ├── neon-glow.ts  # 霓虹背景光晕层与全局样式
-│       ├── branding.ts   # 品牌改版：隐藏鲸鱼/鱼形 logo（纯 CSS）
+│       ├── branding.ts   # 品牌改版：隐藏鲸鱼/鱼形 logo，保留品牌文字（纯 CSS）
 │       ├── ModelSelect.tsx        # 两级「提供商 → 模型」席位
 │       └── ModelSelect.module.css
 ├── scripts/
@@ -146,7 +147,17 @@ pnpm pack
 
 ## 目标 dsh 版本（版本对齐）
 
-本包当前对齐 **dsh 0.1.5-rc.1**（`dsh --version`；profile 里 `@deepseek-ai/dsh` 的安装版本）。0.1.5 相对 0.1.0-rc.5 的关键变化（任一条都会让旧 bundle 静默失效）：
+本包当前对齐 **dsh 0.1.7-alpha.1**（`dsh --version`；profile 里 `@deepseek-ai/dsh` 的安装版本）。0.1.7 相对 0.1.5-rc.1 的关键变化（任一条都会让旧 bundle 静默失效或类型假绿）：
+
+- **`ModelCatalog` 换家**：`@deepseek-ai/dsh-api-remotes/client` 不再导出 `ModelCatalog`；它现在由 **`@deepseek-ai/dsh-api-session-controller/types`** 导出。从旧路径 import 会得到 `TS2305`。
+- **`ctx.remote.session` 的声明在 `./remote` 子路径**：`modelCatalog` / `selectModel` 由 **`@deepseek-ai/dsh-api-session-controller/remote`** 的 `declare module '@deepseek-ai/dsh-typert-protocol'` 声明（生成物 `typert.remote-client.d.ts`）。只 import `/client` 或 `/types` 都**不会**让 `ctx.remote.session` 存在（`TS2339: Property 'session' does not exist on type 'TypertClientRemote'`）。**必须** `import type {} from '@deepseek-ai/dsh-api-session-controller/remote'`。
+- **`ctx.remote.$on` 是白名单键**：合法键由 `TypertRemoteEvent = Extract<TypertForwardableEvent, keyof TypertRemoteEventSelection>` 决定，而该 selection 由 `@deepseek-ai/dsh-api-remotes/client` 的 `API_REMOTE_FORWARDED_EVENTS` 合并而来。本包用的 `llm/adapters-updated`、`settings/document-updated`、`credentials/reference-updated` 仍在白名单内；`connection/reset` 走 `ctx.on`（不是 `$on`），也仍在用。
+- **图标命名从尺寸后缀改为笔画后缀**：`IconCheckOutline16` / `IconChevronDownOutline14` / `IconDataOutline16` / `IconWarningOutline16` 等**全部消失**，改为 `IconCheckOutlineRegular`、`IconChevronDownOutlineRegular`、`IconChevronLeftOutlineRegular`、`IconChevronRightOutlineRegular`、`IconDataOutlineRegular`、`IconWarningOutlineRegular`（另有 `*Medium` 变体）。旧名在运行时是 `undefined`，渲染即崩。内置 `ui-model-selection` 的 0.1.7 bundle 正是用这组 `*Regular`。
+- **`SessionId` 是品牌类型**：`ctx.slots.register` 的 factory `inject` 参数类型是 `SessionIdOf`，它从 `SessionStandardProps` 推导；而 `sessionId: SessionId` 由 **`@deepseek-ai/dsh-client-ui-session/client`** 合并。若该包不在程序里，`SessionIdOf` 退化为 `string`，`sessions.subagentAddress(...)` / `models.directoryFor(...)` 就会报 `TS2345: string is not assignable to SessionId`。这是**类型环境缺包**的假报错，不是源码问题 —— 复核时务必把 `dsh-client-ui-session` 装进临时目录（本包已把它列为 devDep）。
+- **品牌区拆成独立 slot**：新增 `@deepseek-ai/dsh-client-ui-brand-official`，品牌 mark 与 name 变成 `sidebar.brand.mark` / `sidebar.brand.name` 两个 slot，`BrandWordmark` 新增 `includeMark`（`true` → `0 0 182 24`，`false` → `26 0 156 24`）。品牌改版的适配见上文。
+- **`FishLogo` 的 viewBox 改为模板字符串渲染**（`0 0 ${FISH_LOGO_VIEWBOX.width} ${FISH_LOGO_VIEWBOX.height}`），DOM 属性值仍是 `0 0 23.16 17.04`，所以按 viewBox 的 CSS 定位依旧有效。
+
+0.1.5 相对 0.1.0-rc.5 的变化（历史，仍适用）：
 
 - 浏览器 module table 去掉 `@deepseek-ai/dsh-client-runtime`，store 契约搬到 **`@deepseek-ai/dsh-client-store`**（`createSnapshotStore` / `SnapshotStore` / `ObservableSnapshot`，`update(draft)` 为 immer 语义）。旧 bundle 顶层 `require("@deepseek-ai/dsh-client-runtime/client")` 会**在 factory 阶段抛错** —— 整个插件（光晕、品牌、模型选择）一起失效。
 - `session.models` RPC 移除 → `ctx.remote.session.modelCatalog()` + session 的 `modelSelection` projection。
@@ -157,17 +168,18 @@ pnpm pack
 
 **如何复核对齐（不污染 workspace）**：
 
-1. 在临时目录 `npm i` 一份目标版本的真实类型面包（`@deepseek-ai/dsh-client-store`、`dsh-api-remotes`、`dsh-api-session-controller`、`dsh-client-locale`、`dsh-client-ui-commands`、`dsh-client-ui-conversation`、`dsh-client-ui-input-trigger`、`dsh-client-ui-primitives`、`dsh-client-ui-renderer`、`dsh-client-ui-slots`、`dsh-session`、`dsh-typert-protocol`、`@deepseek-ai/cordis`、`react`/`react-dom`/`@types/*`）。
+1. 在临时目录备一份目标版本的真实类型面包。**推荐直接从已安装的 dsh 闭包拷贝**（`<global node_modules>/@deepseek-ai/dsh/node_modules/@deepseek-ai/`），因为 `npm i` 只装显式列出的包，**传递类型依赖会缺失并产生假报错**。至少要覆盖：`dsh-client-store`、`dsh-api-remotes`、`dsh-api-session-controller`、`dsh-api-gateway`、`dsh-client-connection`、`dsh-client-locale`、`dsh-client-ui-commands`、`dsh-client-ui-conversation`、`dsh-client-ui-input-trigger`、`dsh-client-ui-primitives`、`dsh-client-ui-renderer`、`dsh-client-ui-slots`、**`dsh-client-ui-session`**、`dsh-session`、`dsh-typert-protocol`、`@deepseek-ai/cordis`（+ `cosmokit` / `schemastery`）、`react` / `react-dom` / `@types/react(-dom)`。
+   - 若用 `npm i` 先装 react/typescript，注意**它会把先前拷进去的 `@deepseek-ai/*` 全部删掉**，必须先 npm 后拷贝。
 2. 把 `src/` 复制进该临时目录，用一个**不继承 workspace `tsconfig.base.json`** 的 tsconfig（`moduleResolution: Bundler`、`allowImportingTsExtensions`、`strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes`、`noUnusedLocals/Parameters`、`noEmit`）跑 `--noEmit`。**必须不继承**：base 的 `paths` 把 `@deepseek-ai/dsh-*` 指向 workspace 的 0.1.0-rc.5 源码，会给出假绿。
 3. 构建不 typecheck（`dts: false`），所以类型只在第 2 步把关；构建后复核实际 external 列表（见下）。
 
 ## 依赖与闭包
 
-dsh 0.1.5 起，浏览器端的平台模块由**页面 module table**（seed 模块）提供，不再需要把 dsh 包装进 profile 当 peer。因此本包只声明一个 peer（`@deepseek-ai/cordis`），其余 `@deepseek-ai/*` 全部是**构建/类型期 devDeps**，只用于对照目标 dsh 版本的类型面：`dsh-api-remotes`、`dsh-api-session-controller`、`dsh-client-locale`、`dsh-client-store`、`dsh-client-ui-commands`、`dsh-client-ui-conversation`、`dsh-client-ui-input-trigger`、`dsh-client-ui-primitives`、`dsh-client-ui-renderer`、`dsh-client-ui-slots`、`dsh-session`、`dsh-typert-protocol`，外加 `tsdown` / `typescript` / `lightningcss` / `@types/react(-dom)` / `clsx` / `react` / `react-dom`。
+dsh 0.1.5 起，浏览器端的平台模块由**页面 module table**（seed 模块）提供，不再需要把 dsh 包装进 profile 当 peer。因此本包只声明一个 peer（`@deepseek-ai/cordis`），其余 `@deepseek-ai/*` 全部是**构建/类型期 devDeps**，只用于对照目标 dsh 版本的类型面：`dsh-api-remotes`、`dsh-api-session-controller`、`dsh-client-locale`、`dsh-client-store`、`dsh-client-ui-commands`、`dsh-client-ui-conversation`、`dsh-client-ui-input-trigger`、`dsh-client-ui-primitives`、`dsh-client-ui-renderer`、`dsh-client-ui-slots`、`dsh-client-ui-session`（提供 `SessionStandardProps.sessionId` 的品牌类型合并，类型复核必需）、`dsh-session`、`dsh-typert-protocol`，外加 `tsdown` / `typescript` / `lightningcss` / `@types/react(-dom)` / `clsx` / `react` / `react-dom`。
 
 `dsh.client.inject` 列的是**必须先加载的客户端插件 id**（对应本包 `inject` 需要的服务面）：`@deepseek-ai/dsh-api-remotes`、`@deepseek-ai/dsh-api-session-controller`、`@deepseek-ai/dsh-client-locale`、`@deepseek-ai/dsh-client-ui-commands`。这里**只能**写真的客户端插件：写进去一个纯库（如 `@deepseek-ai/dsh-client-store`）或一个已被移除的包（如 `@deepseek-ai/dsh-client-runtime`），插件 fiber 会永远等待依赖而静默不生效。
 
-> **构建期注意事项（重要）**：浏览器端 externals 必须**只**列 module table 能提供的平台模块。dsh 0.1.5-rc.1 的表为：`react`、`react/jsx-runtime`、`react-dom`、`react-dom/client`、`@deepseek-ai/cordis`、`@deepseek-ai/dsh-client-store`、`@deepseek-ai/dsh-client-ui-slots`、`@deepseek-ai/dsh-client-ui-primitives`、`@deepseek-ai/dsh-client-ui-dockkit`。**`clsx` 不是平台模块，必须内联** —— 否则运行时会抛 `require("clsx") missed the module table`（一次真实事故）。构建后复核：
+> **构建期注意事项（重要）**：浏览器端 externals 必须**只**列 module table 能提供的平台模块。dsh 0.1.7-alpha.1 的表（与 0.1.5 相同，未变）为：`react`、`react/jsx-runtime`、`react-dom`、`react-dom/client`、`@deepseek-ai/cordis`、`@deepseek-ai/dsh-client-store`、`@deepseek-ai/dsh-client-ui-slots`、`@deepseek-ai/dsh-client-ui-primitives`、`@deepseek-ai/dsh-client-ui-dockkit`。**`clsx` 不是平台模块，必须内联** —— 否则运行时会抛 `require("clsx") missed the module table`（一次真实事故）。构建后复核：
 
 ```sh
 Select-String -Path lib/client.js -Pattern 'require\("([^"]+)"\)' -AllMatches |
@@ -178,11 +190,11 @@ Select-String -Path lib/client.js -Pattern 'require\("([^"]+)"\)' -AllMatches |
 
 ```sh
 # 构建 + 打包（prepack 运行完整性门槛）
-cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.4.tgz
+cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.7.tgz
 
 # 安装进 web profile（从源码目录或 tgz 路径均可）
 dsh plugin --profile web add D:\path\to\dsh-ui-interaction           # from source dir
-dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.4.tgz
+dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.7.tgz
 dsh plugin --profile web remove dsh-ui-interaction                   # 移除依赖 + 层
 # 安装/移除后重启 `dsh web`
 ```

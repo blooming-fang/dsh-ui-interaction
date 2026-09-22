@@ -1,8 +1,8 @@
-/**
+﻿/**
  * ModelSelect: the composer's named model seat (`conversation.input.model`).
  * Two-level selection: the root menu is the Model / Effort row pair (label +
- * current value + a right chevron). Model drills twice — providers first,
- * then the chosen provider's models — over the shared directory; effort
+ * current value + a right chevron). Model drills twice 鈥?providers first,
+ * then the chosen provider's models 鈥?over the shared directory; effort
  * drills into the selected model's levels. The trigger shows both: model
  * name + effort in the caption tone.
  * Data and submission ride the SAME per-session ModelDirectory as the
@@ -27,8 +27,8 @@ import type {
   ModelProviderGroup, ModelReasoningEffort, ModelSelection,
 } from '@deepseek-ai/dsh-api-session-controller/types'
 import {
-  IconCheckOutline16, IconChevronDownOutline14, IconChevronLeftOutline14, IconChevronRightOutline14,
-  IconDataOutline16, IconWarningOutline16, Toast,
+  IconCheckOutlineRegular, IconChevronDownOutlineRegular, IconChevronLeftOutlineRegular,
+  IconChevronRightOutlineRegular, IconDataOutlineRegular, IconWarningOutlineRegular, Toast,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { descriptionOf } from './describe.ts'
@@ -254,13 +254,13 @@ export function ModelSelect(
 
   // Before the first catalog frame resolves there is no selection to name: say
   // so rather than showing the empty-selection prompt. A selection whose exact
-  // route left the advisory groups still has a name — the Host's own ids.
+  // route left the advisory groups still has a name 鈥?the Host's own ids.
   const waiting = state.current === null && state.status === 'loading'
   const modelLabel = waiting
     ? t('trigger.loading')
     : currentChoice?.model.name
       ?? (state.current === null ? t('trigger.fallback') : `${state.current.provider}/${state.current.model}`)
-  const triggerLabel = effortLabel === undefined ? modelLabel : `${modelLabel} · ${effortLabel}`
+  const triggerLabel = effortLabel === undefined ? modelLabel : `${modelLabel} 路 ${effortLabel}`
   const triggerAria = waiting
     ? t('trigger.loading')
     : state.current === null
@@ -306,10 +306,10 @@ export function ModelSelect(
           }
         }}
       >
-        <IconDataOutline16 className={css.triggerIcon} size={16} />
+        <IconDataOutlineRegular className={css.triggerIcon} />
         <span className={css.triggerLabel}>{modelLabel}</span>
         {effortLabel !== undefined && <span className={css.triggerEffort}>{effortLabel}</span>}
-        <IconChevronDownOutline14 className={clsx(css.chevron, open && css.chevronOpen)} />
+        <IconChevronDownOutlineRegular className={clsx(css.chevron, open && css.chevronOpen)} />
       </button>
 
       {open && createPortal(
@@ -329,13 +329,13 @@ export function ModelSelect(
               <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={openProviderList}>
                 <span className={css.cellLabel}>{t('menu.model')}</span>
                 <span className={css.cellValue}>{modelLabel}</span>
-                <IconChevronRightOutline14 className={css.cellChevron} />
+                <IconChevronRightOutlineRegular className={css.cellChevron} />
               </button>
               {reasoning !== undefined && (
                 <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={() => { setPane('effort') }}>
                   <span className={css.cellLabel}>{t('menu.effort')}</span>
                   <span className={css.cellValue}>{effortLabel}</span>
-                  <IconChevronRightOutline14 className={css.cellChevron} />
+                  <IconChevronRightOutlineRegular className={css.cellChevron} />
                 </button>
               )}
             </>
@@ -373,8 +373,8 @@ export function ModelSelect(
                       onClick={() => { openModels(group.id) }}
                     >
                       <span className={css.cellLabel}>{group.name}</span>
-                      {selected && <IconCheckOutline16 className={css.providerCheck} />}
-                      <IconChevronRightOutline14 className={css.cellChevron} />
+                      {selected && <IconCheckOutlineRegular className={css.providerCheck} />}
+                      <IconChevronRightOutlineRegular className={css.cellChevron} />
                     </button>
                   )
                 })}
@@ -394,7 +394,7 @@ export function ModelSelect(
                 className={css.back}
                 onClick={openProviderList}
               >
-                <IconChevronLeftOutline14 className={css.backChevron} />
+                <IconChevronLeftOutlineRegular className={css.backChevron} />
                 <span className={css.cellLabel}>{activeGroup.name}</span>
               </button>
               <div className={clsx(css.groups, 'scrollable')}>
@@ -420,7 +420,7 @@ export function ModelSelect(
                         )}
                       </span>
                       <span className={css.check}>
-                        {selected ? <IconCheckOutline16 /> : null}
+                        {selected ? <IconCheckOutlineRegular /> : null}
                       </span>
                     </button>
                   )
@@ -460,7 +460,7 @@ export function ModelSelect(
                       )}
                     </span>
                     <span className={css.check}>
-                      {effectiveEffort === level.effort ? <IconCheckOutline16 /> : null}
+                      {effectiveEffort === level.effort ? <IconCheckOutlineRegular /> : null}
                     </span>
                   </button>
                 ))}
@@ -474,7 +474,7 @@ export function ModelSelect(
         <Toast
           key={toast.seq}
           text={toast.text}
-          icon={<IconWarningOutline16 />}
+          icon={<IconWarningOutlineRegular />}
           anchor={rootRef.current?.closest('[data-composer-card]') ?? null}
           onDone={() => { setToast(null) }}
         />

@@ -13,7 +13,15 @@
  * generation never overwrites the current one.
  */
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import type { ModelCatalog } from '@deepseek-ai/dsh-api-remotes/client'
+// Type-only: ModelCatalog moved to the session-controller face in dsh 0.1.7.
+import type { ModelCatalog } from '@deepseek-ai/dsh-api-session-controller/types'
+// Type-only: declares the generated `ctx.remote.session` namespace
+// (modelCatalog / selectModel). In dsh 0.1.7 this lives on the `./remote`
+// subpath, not `./client` — without it `ctx.remote.session` does not exist.
+import type {} from '@deepseek-ai/dsh-api-session-controller/remote'
+// Type-only: pulls the api-remotes Client merge (the forwarded-Host-event
+// allowlist that types `ctx.remote.$on`).
+import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 
 /** Observable lifecycle of the shared model catalog. */

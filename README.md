@@ -15,7 +15,7 @@ Esc 逐层返回（模型 → 提供商 → 根 → 关闭）。`/model` 命令�
 
 菜单渲染在 `document.body` 上（`position: fixed`，先以隐藏态量一次真实尺寸再夹取到视口内），因为 composer 轨道会滚动并裁剪绝对定位的弹层；窄容器下触发器收起文字、只留前导图标。
 
-> 当前对齐 **dsh 0.1.5-rc.1**：目录来自 Host 代次共享的 `modelCatalog` + 本会话持久化的 `modelSelection` projection，提交走 `remote.session.selectModel`。详见 [AGENTS.md](AGENTS.md#目标-dsh-版本版本对齐)。
+> 当前对齐 **dsh 0.1.7-alpha.1**：目录来自 Host 代次共享的 `modelCatalog` + 本会话持久化的 `modelSelection` projection，提交走 `remote.session.selectModel`。详见 [AGENTS.md](AGENTS.md#目标-dsh-版本版本对齐)。
 
 ### 霓虹氛围背景光晕
 
@@ -28,14 +28,13 @@ Esc 逐层返回（模型 → 提供商 → 根 → 关闭）。`/model` 命令�
 - **主题适配** —— 跟随 body 的 `data-ds-dark-theme` 自动切换，无需 JS。
 - **无障碍** —— 尊重 `prefers-reduced-motion`，减弱动画时仅保留静态光晕。
 
-### 品牌改版：去掉 logo
+### 品牌改版：去掉 logo，保留品牌文字
 
-去掉 DeepSeek 的鲸鱼/鱼形 logo（品牌文字保持不变）：
+去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**：
 
-- **侧栏 wordmark** —— 隐藏「鲸鱼图形 + deepseek 字母 + HARNESS 徽标」的整体 SVG（`viewBox="0 0 182 24"`）。
-- **新会话内容区** —— 隐藏英雄区头图前导的鱼形 logo（`FishLogo`）。
-- **折叠侧栏** —— 收起态工具栏的鱼形图标一并隐藏。
-- **实现方式** —— 纯 CSS，用稳定 `viewBox` 签名（wordmark `0 0 182 24`、fish `0 0 23.16 17.04`）隐藏 logo，不依赖 hashed 类名；`display:none` 隐藏而非删除，React 重渲染不会撤销；纯装饰，不接入数据或 slot。
+- **鲸鱼/鱼形 logo** —— 隐藏 `FishLogo`（`viewBox="0 0 23.16 17.04"`）。一条规则覆盖全部鱼形标记：侧栏品牌 mark slot（折叠态工具栏与展开态头部）以及新会话英雄区的动态鱼形头图。
+- **品牌文字保留** —— 侧栏 `sidebar.brand.name` 渲染的无 logo wordmark（`viewBox="26 0 156 24"`，即「deepseek HARNESS」文字）**不再隐藏**。0.1.7 把 logo 与文字拆成了两个独立 slot（`sidebar.brand.mark` / `sidebar.brand.name`）并给 `BrandWordmark` 加了 `includeMark` 开关，因此「只去 logo、留文字」现在是精确可达的；0.1.5 时代整块隐藏 wordmark 的做法已废弃（那会连品牌文字一起隐藏）。
+- **实现方式** —— 纯 CSS，用稳定 `viewBox` 签名隐藏 logo，不依赖 hashed 类名；`display:none` 隐藏而非删除，React 重渲染不会撤销；纯装饰，不接入数据或 slot。
 
 ## 后续规划
 
@@ -66,6 +65,7 @@ dsh plugin --profile web add dsh-ui-interaction
 - `src/client/catalog.ts` —— Host 代次共享的模型目录（`remote.session.modelCatalog()`）。
 - `src/client/describe.ts` —— 行 id 与内置模型描述的本地化。
 - `src/client/neon-glow.ts` —— 霓虹背景光晕层与全局样式。
+- `src/client/branding.ts` —— 品牌改版：隐藏鲸鱼/鱼形 logo，保留品牌文字（纯 CSS）。
 - `cordis.patch.yml` —— 禁用被替换表面并插入本包的层。
 - 参见 [AGENTS.md](AGENTS.md) 了解包契约、不可回退的不变量与新增功能的流程。
 
@@ -77,7 +77,7 @@ dsh plugin --profile web add dsh-ui-interaction
 cd plugins/dsh-ui-interaction
 pnpm install && pnpm run build
 npm pack
-# 生成 dsh-ui-interaction-0.1.4.tgz
+# 生成 dsh-ui-interaction-0.1.7.tgz
 ```
 
 在中文 Windows（ANSI 代码页 936）上，构建需强制使用 UTF-8；`scripts/build.mjs` 会自动处理。参见 [AGENTS.md](AGENTS.md#构建与编码)。
