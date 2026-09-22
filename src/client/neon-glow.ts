@@ -61,6 +61,20 @@ body[data-ds-dark-theme] {
   --dsw-alias-bg-base: transparent !important;
   --dsw-specific-sidebar-fill: transparent !important;
 }
+/* The right sidebar panel (dsh-client-ui-sidebar-right, the pop-out column on
+   the right) paints its surface through var(--dsw-alias-bg-base), so the
+   transparent override above would let the ambient layer show straight through
+   it. Give that one subtree its own opaque base instead: plain white in light
+   theme, black in dark. The panel element always carries
+   data-sidebar-right-panel (push or fullscreen), which pins the subtree without
+   a hashed class name; redefining the token here cascades to every surface
+   inside the panel, so its dock hosts and empty state fill with it. */
+body [data-sidebar-right-panel] {
+  --dsw-alias-bg-base: #ffffff !important;
+}
+body[data-ds-dark-theme] [data-sidebar-right-panel] {
+  --dsw-alias-bg-base: #000000 !important;
+}
 .dsh-neon-glow-blob {
   position: absolute;
   border-radius: 50%;
