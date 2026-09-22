@@ -99,7 +99,14 @@
   padding: 4px;
   border: 0;
   border-radius: 20px;
-  background: var(--dsw-specific-menu);
+  /* The menu token is a LOW-alpha overlay off macOS (#f8f9fa94 light /
+     #30313680 dark, i.e. ~58% / ~50%; macOS uses .94) and upstream always
+     pairs it with backdrop-filter, which this portaled surface does not use.
+     Taking the token alone therefore reads as a see-through panel with the
+     neon background showing through. Layer it over the opaque elevated fill
+     instead: the same theme colour, fully opaque. */
+  background-color: var(--dsw-alias-bg-layer-2);
+  background-image: linear-gradient(var(--dsw-specific-menu), var(--dsw-specific-menu));
   box-shadow: var(--dsw-elevation-prominent);
   color: var(--dsw-alias-label-primary);
   /* The elevation ring takes the l1 border tone on this surface. */
