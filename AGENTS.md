@@ -8,8 +8,10 @@
 
 **当前已实现的功能**：
 1. **模型选择器优化** —— 把 composer 的模型选择从「单一按提供商分组的大列表」改成「先提供商、后模型」的两级下钻。
-2. **霓虹氛围背景光晕** —— 为整个 GUI 页面背景叠加多个大小不一的柔和彩色光晕（仅紫、蓝两色），并自备非纯白页面背景（亮色 `#FBFCFE` / 暗色深灰），同时配套调整 composer 输入框（去阴影）与用户消息气泡（加深边框）两处表面。亮/暗主题分别给出合适的强度（整体克制淡雅）。
-3. **品牌改版** —— 去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**：隐藏 `FishLogo`（侧栏品牌 mark slot 的折叠态工具栏与展开态头部、新会话英雄区的动态鱼形头图），保留侧栏 `sidebar.brand.name` 的无 logo wordmark 文字。
+2. **暖纸质外观主题** —— 把一整套设计令牌（珊瑚橙主色 `#cc785c` + 暖米白画布 `#f5f0e4` + 同族暖炭黑暗色面）通过 ui-theme 的 `ctx.theme.overrideTokens` 压进别名令牌层，配套 StyreneB / Inter / JetBrains Mono 字体栈与更克制的圆角刻度；亮/暗两套值成对给出，一处注册覆盖两种配色。
+3. **侧边栏面板两列网格** —— 把左侧栏顶部的全局面板行（插件 / Superagent / 自动化任务 / 我的工作台 / 更多）从单列改成两列网格，5 个面板从 5 行压到 3 行，省下的高度全给下面的工作区列表。
+4. **侧栏「新会话」主按钮** —— 把新会话按钮从「中性底 + 发丝线」改成与 composer 发送按钮同一套珊瑚橙色值（`button-info-fill` / `button-info-hover` + 白字）。
+5. **品牌改版** —— 去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**：隐藏 `FishLogo`（侧栏品牌 mark slot 的折叠态工具栏与展开态头部、新会话英雄区的动态鱼形头图），保留侧栏 `sidebar.brand.name` 的无 logo wordmark 文字。
 
 **后续规划**：在本包内继续增加其它交互优化。每个新优化应遵循下文「新增一个优化功能」的流程，并与现有功能在同一 patch 层内共处。
 
@@ -23,31 +25,70 @@
 - 本包的 `cordis.patch.yml` **禁用**内置的 `ui-model-selection` 行并**插入**本包自己的行。安装后它完全替换内置表面；不会同时启用内置包（两者会在同一 slot 上冲突）。
 - **不要**依赖 workspace 包：`D:\plugin\deepseek-harness\packages\client\ui-model-selection` 是 0.1.0-rc.5 的开发副本；对照物是**已安装闭包里的同名包**及其 `lib/types/**/*.d.ts`。
 
-## 当前功能：霓虹氛围背景光晕
+## 当前功能：暖纸质外观主题（theme.ts）
 
-`dsh-ui-interaction` 还在浏览器端挂载一层**霓虹氛围背景光晕**（`neon-glow.ts`），作为纯装饰性的全屏背景层，不与任何 slot 或数据交互。
+`dsh-ui-interaction` 在浏览器端挂一层**外观主题**（`theme.ts`）：把一整套设计令牌（珊瑚橙主色 + 暖米白画布 + 同族暖炭黑暗色面）折进 ui-theme 的别名令牌层，全站换肤而不改任何组件。
 
-- **挂载方式** —— `apply` 通过 `ctx.effect` 调用 `applyNeonGlow()`，创建固定、透明不拦点击的背景层（`position: fixed; z-index: 0; pointer-events: none`）并 `prepend` 到 `body`；同时注入全局样式。卸载时随 effect 一起移除。
-- **提升 `#root`** —— 样式把 `#root` 提升到 `z-index: 1` 的独立层叠上下文，确保 app 内容始终压在光晕之上。
-- **光晕层自备页面背景** —— 光晕层 `background` 即为页面背景：亮色 `#FBFCFE`（非纯白、带淡蓝调）、暗色深灰 `rgb(21,21,23)`；光晕 blob 直接画在这层背景之上。
-- **基础表面透明** —— 用 `!important` 把 `--dsw-alias-bg-base`、`--dsw-specific-sidebar-fill` 覆盖为 `transparent`，让 app 的基础表面（AppFrame、会话根、侧栏）透出光晕层的背景与光晕。`!important` 同时压过 token 样式表与 theme presenter 写的内联 body token。
-- **两色、多光晕、错落大小** —— 紫、蓝两个色调，但以多个尺寸不同的光晕池（56vw ~ 24vw）错落分布四周，缓慢漂移、缩放。每个光晕的颜色与布局是 `BLOBS` 数组的**单一数据源**，内联为 CSS 变量；样式表只承载通用规则、动画 keyframes 与主题开关。
-- **配套表面微调** —— 同属本功能的九处样式调整：composer 输入框卡片（`[data-composer-card]`）去掉 `box-shadow`，使其在霓虹背景下呈扁平；用户消息气泡（`[data-chat-flow-kind="user"] [class$="_bubble"]:not([data-pending-steering] *)`）加一条比背景深的边框，作为清晰的消息边界；暗色主题下 markdown 内容根（MarkdownText 的 `css.markdown` 面，以 `[data-chat-flow] div[class*="_markdown_"]` 定位）正文颜色从 `--dsw-alias-label-primary` 降为 `--dsw-alias-label-secondary`；亮色主题下代码块头部横幅（CodeBlock 的 `--dsl-code-block-banner-background-color`，经 `.md-code-block` 根覆盖自定义属性）改为 `--dsw-static-neutral-bluish-00`；亮色主题下 markdown 内联代码块（`[data-chat-flow] [class*="_markdown_"] :not(pre) > code`）背景改为纯白；亮色主题下聊天内容区（`[data-chat-flow]`）内所有背景用 `--dsw-alias-markdown-code-block` 的表面改为纯白（在容器上覆盖该 token，级联到全部后代，不依赖 hashed 类名）；亮色主题下本轮交付文件卡片（dsh-client-ui-deliverables 的 PresentedFileCard，本轮交付的文件卡片，卡片带稳定的 `data-presented-file` 属性）背景从 `--deliverable-fill`（亮色 `--dsw-static-neutral-50`）改为纯白 `--dsw-static-neutral-bluish-00`；消息列（ChatView 的 `.column`，以稳定的 `[data-chat-flow]` 属性定位，而非 hashed 类名）内相邻可见、非空的流条目（`[class$="_flowItem"]` 后缀匹配）之间上边距从 16px 收紧为 4px；左侧侧栏「新会话」按钮（SidebarRoot 的 `.newSession`，以稳定的 `[class$="_newSession"]` 后缀定位，而非 hashed 前缀）改为玻璃拟态样式（半透明磨砂 + `backdrop-filter` 背景模糊 + 内高光与柔影，亮/暗主题分别适配）。
-- **主题适配** —— 跟随 `body[data-ds-dark-theme]`：暗色主题稍强的霓虹（`--glow-dark`、中等不透明度）；亮色主题极淡的粉彩（`--glow-light`、低不透明度）。整体克制淡雅，避免过曝。
-- **无障碍** —— 尊重 `prefers-reduced-motion`，减弱动画时仅保留静态光晕。
+- **接入缝隙** —— ui-theme（`@deepseek-ai/dsh-client-ui-theme`）是 `--dsw-*` 令牌样式表与配色的唯一权威，并向第三方开放 `ctx.theme`：`overrideTokens(source, { light, dark })` 把一个令牌图层压在当前主题之上（同一 source 再次调用即整层替换）。本包在 `apply` 里 `ctx.inject(['theme'], …)` 取得该服务，用 `overrideTokens('dsh-ui-interaction', THEME_TOKENS)` 注册，随 effect 卸载撤下。**亮/暗两值成对给出**，所以一层即覆盖两种配色，且不夺走用户的光照偏好（light / dark / system 仍由 Settings 决定）。
+- **两个半边** —— `applyThemeTokens(theme)` 注册颜色层；`applyThemeStyle()` 注入插件自带样式表，承载令牌层表达不了的部分（`:root` 级默认字体栈、圆角刻度、markdown 标题衬线）。二者都在 `apply` 的 `ctx.effect` 中挂载。
+- **令牌落到哪** —— 由 ui-theme 自己的 presenter 写进 `body` 的内联自定义属性（`body.style.setProperty`），本模块只提供字面值，不自己拼 DOM 或写全局 CSS 颜色。
+- **调色板（单一数据源 `THEME_TOKENS`）** —— 亮色：画布 `#f5f0e4`、抬升面 `#efe9db` / `#e9e1d1` / `#e1d7c4`、文字阶梯 `#141413` → `#3d3d3a` → `#6c6a64` → `#857f74`、发丝线 `#dfd5c5` / `#e6ddcd`、主色 `#cc785c`（按下 `#a9583e`、禁用 `#e3dacb`）；暗色：画布 `#1e1c18`、抬升面 `#26231e` / `#2c2924` / `#35312a`、文字 `#efebe4` / `#a8a49c` / `#918d84`，主色仍为珊瑚橙（暖炭黑上 5.5:1），需要「贴在暗画布上的强调色」时用浅珊瑚 `#e0997c`。
+- **降眩光（按用户反馈调过一版）** —— 设计系统的原色 `#faf9f5` 画布（相对亮度 0.947）铺满整屏聊天区时偏白偏刺眼，因此整条阶梯统一下压约 7% 亮度并保持同一暖色相：亮色画布 0.947 → **0.873**（`#f5f0e4`），抬升面随之下压，正文对比度反而升高（body 10.34:1 → 9.58:1 仍远高于 AA，墨色 17.5:1 → 16.2:1）；暗色则反向处理：画布从 `#181715`（0.008）抬到 `#1e1c18`（0.010）减轻「黑洞感」，最亮文字从 `#faf9f5` 降到 `#efebe4`（15.2:1 → 14.7:1），大块浅字不再那么扎眼。**任何后续调色都应保持这两条：亮色大面积背景 L ≤ 0.88，暗色正文亮度不高于 `#efebe4` 档。**
+- **覆盖到的令牌组** —— 页面/抬升面与遮罩、发丝线 1–4、文字阶梯（primary / secondary / tertiary / caption / dimmed / foreground / inverted / shimmer）、品牌与按钮（primary / contrast / elevated / floating / ghost / tool-bar，其中 `button-info-fill` 就是发送按钮）、交互水洗、语义状态（business / error / success / warn / idle）、链接、markdown 与代码（code-block / banner / inline-code / tag / citation / segment）、diff 底色、feature 面（`specific-sidebar-fill`、`specific-bubble`、`specific-input-major`、selector / tip / `menu-surface-fill` / `menu-group-header-fill` / settings-card，落在 surface-card 上）、滚动条、switch 拇指、toast / tooltip、onboarding、四个阴影令牌，以及两处 thinking 渐变。
+- **排版** —— 设计系统是「编辑体衬线标题 + humanist sans 正文」的拆分，在 `html:root` 上落三套栈：`--dsh-font-family-text-default` = StyreneB / Inter / Roboto / 系统中西文回落；`--dsh-font-family-code-default` = JetBrains Mono / SF Mono / Consolas；`--dsw-font-family-brand` = Copernicus / Tiempos Headline / **Cormorant Garamond** / EB Garamond / Garamond / Times New Roman / 中文衬线（宋体、Noto Serif CJK）。
+- **标题的编辑体规则** —— markdown 标题（`[data-chat-flow] h1…h4`）走 display 衬线，并强制 **`font-weight: 400`**（设计系统明确「display 字重永不加粗」）与逐级收紧的负字距（h1 -1px / h2 -0.5px / h3-h4 -0.3px）。缺了负字距，衬线标题会立刻变得不像这套设计。
+- **圆角刻度** —— `--dsw-radius-xs … xl` 与 `--dsw-radius-panel` = 4 / 6 / 8 / 12 / 16 / 16px（design system 的 rounded 刻度，比平台默认紧一档）。用 `html:root` 而非 `:root` 是为了**不依赖样式表注入顺序**地压过 ui-theme 的 `:root` 声明。
+- **层级靠色块，不靠阴影** —— 另覆盖四个阴影令牌（`--dsw-shadow-lv1` / `-lv1-blur` / `-lv2` / `-lv3`）为**暖墨低透明度**阴影，保留必要的浮起分离，但不引入中性黑的重投影；深度主要由 `--dsw-alias-bg-layer-*` 的米色阶与暗色阶提供。
+- **用户字体优先** —— ui-theme 把 `--dsw-font-family` 组合成「用户清单, 默认栈」，所以本包只替换默认栈；用户在 Settings 里选的字体依旧排在最前。
+- **不需要 `!important`** —— 令牌走常规层叠（body 内联属性 + 样式表的 `html:root`），既没有也不需要覆盖式声明。
+- **不 import ui-theme 的类型** —— 已安装闭包里 `dsh-client-ui-theme` 不带 `.d.ts`，所以 `theme.ts` 用本地结构类型 `ThemeTokenHost`（只含 `overrideTokens` 一个成员）描述取到的服务面，既拿到类型也不制造一个假的类型依赖。
 
 **不可回退的不变量**：
-- 光晕层必须 `pointer-events: none`，绝不能拦截任何点击。
-- `#root` 必须被提升到光晕之上；否则内容会被装饰层盖住。
-- 这是纯装饰：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
-- 配套表面微调的定位必须用稳定的属性/结构选择器（`data-composer-card`、`data-chat-flow`、`data-chat-flow-kind`、`[class$="_bubble"]` / `[class$="_newSession"]` 后缀匹配、`[class*="_markdown_"]` local 名片段匹配），**不得**依赖每次构建会变的完整 hashed 类名。
-- 注入的全局样式里的注释**不得含反引号**（模板字符串会被提前终止，导致构建失败）。
+- 主题只能通过 `ctx.theme.overrideTokens` 这个扩展点叠加；**不得**直接改 ui-theme 的令牌样式表，也不得替换它的 presenter。
+- 每个令牌必须给出 `{ light, dark }` 成对值（ui-theme 会校验，裸字符串直接抛错）；给单值会让用户切换配色后不可读。
+- 令牌名必须是 ui-theme 里真实存在的 `--dsw-*` 名；拼错会被静默忽略，表现为某块表面没跟着换色。
+- 这是纯呈现：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
+- 注入样式表里的注释**不得含反引号**（模板字符串会被提前终止，导致构建失败）。
+
+## 当前功能：侧边栏面板两列网格（sidebar-panels.ts）
+
+左侧栏顶部的**全局面板列表**（ui-sidebar 的 `nav` → `sidebar.panellist` 行：插件 / Superagent / 自动化任务 / 我的工作台 / 更多）原本是单列、整宽 36px 的行，5 个面板吃掉 5 行高度。本层把它改成**两列网格**，5 行变 3 行，省下的高度归 `sidebar.workspaces`（工作区/会话列表）。
+
+- **挂载方式** —— `apply` 通过 `ctx.effect` 调用 `applySidebarPanelGrid()`，注入一张纯 CSS 样式表（与 `applyThemeStyle` / `applyDshBranding` 同款模式）；卸载时移除。
+- **只需 CSS 的原因** —— 这些行就是 ui-sidebar 自己渲染的普通 `<button>`，整个列表是一个 `<nav>`；重排它不需要数据、slot 或命令，所以一串样式规则就是全部改动，React 重渲染也不会撤销。
+- **稳定选择器** —— 只用 class **local 名后缀**定位：`[class$="_panelList"]`（nav）、`[class$="_panelRow"]`（行按钮）、`[class$="_panelTitle"]`（行标签）。哈希前缀每次构建都变，绝不写死。
+- **列数** —— `grid-template-columns: repeat(auto-fit, minmax(104px, 1fr))`：默认栏宽下正好两列；把侧栏拖得很窄时自动退回单列（行标签本来就有 ellipsis，不会溢出）。`> *` 统一 `display: flex; min-width: 0`，因为每行外面包着一层 primitives 的 Tooltip（有无 wrapper 都能撑满）。
+- **奇数列收尾** —— `> *:last-child:nth-child(odd)` 让最后一行（当前是「更多」）跨两列，不留下半格空洞。
+- **折叠轨道不受影响** —— ui-sidebar 只在轨道态给根元素加 `…_collapsed` local 类，而轨道态的行是固定 36×36 的纯图标按钮。所有规则都挂在 `[class$="_panelList"]:not([class*="_collapsed"] *)` 上，因此只作用于展开态。
+- **纯装饰** —— 不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
+
+**不可回退的不变量**：
+- 只作用于展开态；折叠轨道（36×36 图标列）**不得**被网格化。
+- 定位必须用 local 名后缀，**不得**依赖每次构建会变的 hashed 前缀。
+- 布局必须能优雅退化：窄栏回落到单列，标签 ellipsis 而不是溢出/换行。
+- 这是纯呈现：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
+
+## 当前功能：侧栏「新会话」主按钮（sidebar-cta.ts）
+
+左侧栏的新会话按钮原本是「中性底（`--dsw-alias-button-elevated-fill`）+ 1px 发丝线 + 墨色文字」，和下面的面板行长得太像，不像是这一列的主操作。本层把它换成 **composer 发送按钮的同一套色值**：填充 `--dsw-alias-button-info-fill`（珊瑚橙）、文字纯白、hover `--dsw-alias-button-info-hover`。两个主操作因此共用同两个令牌，主题改色时一起走。
+
+- **挂载方式** —— `apply` 通过 `ctx.effect` 调用 `applySidebarCta()`，注入纯 CSS 样式表（与 `applySidebarPanelGrid` / `applyDshBranding` 同款）；卸载时移除。
+- **稳定选择器** —— `body [class$="_newSession"]:not([class*="_collapsed"] *)`：class 只按 local 名后缀匹配；`body` 前缀把特异性抬到 (0,2,0) 以压过 ui-sidebar 的 `[data-platform=darwin]` 与轨道规则，**不用 `!important`**。
+- **只作用于展开态** —— 折叠轨道里同一个按钮是 36×36 无边框图标，铺珊瑚橙会变成一块重色点，因此排除。
+- **不改变形状** —— 只换色值：圆角、尺寸、内边距、快捷键提示条都还是 ui-sidebar 自己的；hover 时右侧的快捷键 chip 也染成白色（原本是三级文字色）。
+- **纯装饰** —— 不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
+
+**不可回退的不变量**：
+- 色值必须与 composer 发送按钮同源（`--dsw-alias-button-info-fill` / `-hover` + 白字），**不得**写死新的十六进制色。
+- 只作用于展开态；折叠轨道的图标按钮**不得**被填充。
+- 定位必须用 local 名后缀，**不得**依赖 hashed 前缀；也**不得**靠 `!important` 抢层级。
+- 这是纯呈现：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
 
 ## 当前功能：品牌改版（branding.ts）
 
 `dsh-ui-interaction` 还在浏览器端挂载一层**品牌改版**（`branding.ts`），去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**。
 
-- **挂载方式** —— `apply` 通过 `ctx.effect` 调用 `applyDshBranding()`，注入一段纯 CSS 样式表（与 `applyNeonGlow` 同款模式）；卸载时移除该样式。
+- **挂载方式** —— `apply` 通过 `ctx.effect` 调用 `applyDshBranding()`，注入一段纯 CSS 样式表（与 `theme.ts` 的 `applyThemeStyle` 同款模式）；卸载时移除该样式。
 - **dsh 0.1.7 的 slot 拆分** —— 品牌区不再是单个整体 SVG：`sidebar.brand.mark`（logo）与 `sidebar.brand.name`（文字）是两个独立 slot，且 `BrandWordmark` 新增 `includeMark` 开关。内置的 `@deepseek-ai/dsh-client-ui-brand-official` 用 `FishLogo` 填 mark slot、用 `includeMark: false` 的 wordmark（`viewBox="26 0 156 24"`）填 name slot。因此「只去 logo、留文字」现在是精确可达的。
 - **稳定 DOM 签名** —— 用 `viewBox` 精确识别 `FishLogo`：`viewBox="0 0 23.16 17.04"` → `display: none`。该签名由 `FISH_LOGO_VIEWBOX`（`{ width: 23.16, height: 17.04 }`）在渲染时以模板字符串拼出，所以 DOM 属性值仍是稳定字面量。**一条规则覆盖全部鱼形标记**：侧栏 mark slot（折叠态工具栏 + 展开态头部）与新会话英雄区的动态鱼形头图（ui-conversation 自己用 `FISH_LOGO_PATH` 组合 svg，但 viewBox 同源）。
 - **不隐藏 `0 0 182 24`** —— 那是 `includeMark: true` 的整块 wordmark（鲸鱼 + 文字）。0.1.7 默认不渲染它，且隐藏它会连品牌文字一起隐藏，与「保留品牌文字」相悖。0.1.5 时代隐藏整块 wordmark 的做法**已废弃**。
@@ -68,15 +109,17 @@ dsh-ui-interaction/
 ├── cordis.patch.yml      # 组合层：禁用 ui-model-selection，插入本包行
 ├── src/
 │   ├── index.ts          # 节点端 — 有意为空（纯浏览器 UI）
-│   └── client/           # 浏览器端（模型选择表面 + 霓虹背景光晕）
-│       ├── index.ts      # apply()：服务 + /model popup + composer 席位 + 光晕挂载
+│   └── client/           # 浏览器端（模型选择 + 外观主题 + 侧栏网格/主按钮 + 品牌改版）
+│       ├── index.ts      # apply()：服务 + /model popup + composer 席位 + 主题/网格挂载
 │       ├── service.ts    # ModelDirectoryResolver（ctx.modelDirectories）
 │       ├── catalog.ts    # ModelCatalogDirectory：Host 代次共享的模型目录
 │       ├── directory.ts  # 按会话的 ModelDirectory store（catalog + projection）
 │       ├── describe.ts   # 行 id 与内置模型描述的本地化（popup 与席位共用）
 │       ├── slots.ts      # 席位的注入面类型
 │       ├── locales.ts    # `model` 命名空间字典
-│       ├── neon-glow.ts  # 霓虹背景光晕层与全局样式
+│       ├── theme.ts      # 暖纸质外观主题：调色板、ui-theme 令牌层、字体与圆角样式表
+│       ├── sidebar-panels.ts # 侧边栏全局面板两列网格（纯 CSS）
+│       ├── sidebar-cta.ts   # 侧栏「新会话」主按钮：与发送按钮同色值
 │       ├── branding.ts   # 品牌改版：隐藏鲸鱼/鱼形 logo，保留品牌文字（纯 CSS）
 │       ├── ModelSelect.tsx        # 两级「提供商 → 模型」席位
 │       └── ModelSelect.module.css
@@ -159,7 +202,7 @@ pnpm pack
 
 0.1.5 相对 0.1.0-rc.5 的变化（历史，仍适用）：
 
-- 浏览器 module table 去掉 `@deepseek-ai/dsh-client-runtime`，store 契约搬到 **`@deepseek-ai/dsh-client-store`**（`createSnapshotStore` / `SnapshotStore` / `ObservableSnapshot`，`update(draft)` 为 immer 语义）。旧 bundle 顶层 `require("@deepseek-ai/dsh-client-runtime/client")` 会**在 factory 阶段抛错** —— 整个插件（光晕、品牌、模型选择）一起失效。
+- 浏览器 module table 去掉 `@deepseek-ai/dsh-client-runtime`，store 契约搬到 **`@deepseek-ai/dsh-client-store`**（`createSnapshotStore` / `SnapshotStore` / `ObservableSnapshot`，`update(draft)` 为 immer 语义）。旧 bundle 顶层 `require("@deepseek-ai/dsh-client-runtime/client")` 会**在 factory 阶段抛错** —— 整个插件（主题、品牌、模型选择）一起失效。
 - `session.models` RPC 移除 → `ctx.remote.session.modelCatalog()` + session 的 `modelSelection` projection。
 - `ctx.slots` 现在由 **`@deepseek-ai/dsh-client-ui-renderer/client`** 声明（旧版在 ui-slots）；ui-slots 只剩纯契约类型。
 - 命令贡献的 `description` 从字符串改为 **`() => string`**（每次候选 pass 重新解析）；`ui.popupSelect.options` 多一个 `AbortSignal` 参数。
@@ -190,11 +233,11 @@ Select-String -Path lib/client.js -Pattern 'require\("([^"]+)"\)' -AllMatches |
 
 ```sh
 # 构建 + 打包（prepack 运行完整性门槛）
-cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.7.tgz
+cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.13.tgz
 
 # 安装进 web profile（从源码目录或 tgz 路径均可）
 dsh plugin --profile web add D:\path\to\dsh-ui-interaction           # from source dir
-dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.7.tgz
+dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.13.tgz
 dsh plugin --profile web remove dsh-ui-interaction                   # 移除依赖 + 层
 # 安装/移除后重启 `dsh web`
 ```

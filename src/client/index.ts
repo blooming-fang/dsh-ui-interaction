@@ -12,10 +12,12 @@
  * entry because those Agent-bound RPCs would activate persisted history
  * outside the direct-parent continuation path.
  *
- * Alongside the model picker, the plugin also mounts an ambient neon-glow
- * background (`neon-glow.ts`): a fixed decorative layer of stacked soft color
- * pools behind the app, keyed off the body dark-theme flag so the glow is
- * vivid on dark and a faint tint on light.
+ * Alongside the model picker, the plugin re-skins the GUI with its own
+ * appearance theme (`theme.ts`): a warm-paper design-token palette stacked onto
+ * the ui-theme alias layer through `ctx.theme.overrideTokens`, with its
+ * typography and radius scale carried by a plugin-owned stylesheet. A further
+ * stylesheet (`sidebar-panels.ts`) folds the sidebar's global panel list into a
+ * two-column grid so the workspace list keeps the height.
  */
 // Type-only: the selection shape both entries submit.
 import type { ModelSelection } from '@deepseek-ai/dsh-api-session-controller/types'
@@ -35,7 +37,9 @@ import { descriptionOf, rowId } from './describe.ts'
 import { ModelDirectoryResolver } from './service.ts'
 import type { ModelSelectInjected } from './slots.ts'
 import { ModelSelect } from './ModelSelect.tsx'
-import { applyNeonGlow } from './neon-glow.ts'
+import { applyThemeStyle, applyThemeTokens, type ThemeTokenHost } from './theme.ts'
+import { applySidebarPanelGrid } from './sidebar-panels.ts'
+import { applySidebarCta } from './sidebar-cta.ts'
 import { applyDshBranding } from './branding.ts'
 import { en, zh, type ModelKey } from './locales.ts'
 
@@ -109,10 +113,27 @@ export const inject = ['commandUi', 'locale', 'sessions', 'slots', 'remote', 're
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
-  // Ambient neon-glow background: pure decorative chrome mounted with the
-  // plugin and disposed with it. No data, no slots — it renders nothing
-  // model-visible.
-  ctx.effect(() => applyNeonGlow(), 'dsh-ui-interaction: neon-glow background')
+  // Appearance theme: the palette rides ui-theme's override layer (one
+  // per-scheme token layer, disposed with the plugin), while the typography and
+  // radius scale are a plugin-owned stylesheet. Pure presentation — no data,
+  // no slots, nothing model-visible.
+  ctx.effect(() => applyThemeStyle(), 'dsh-ui-interaction: theme stylesheet')
+  ctx.inject(['theme'], (scope: ClientContext) => {
+    const theme = scope.get('theme') as ThemeTokenHost | undefined
+    if (theme === undefined) return
+    scope.effect(() => applyThemeTokens(theme), 'dsh-ui-interaction: theme tokens')
+  })
+
+  // Sidebar panel grid: the global panel rows (插件 / Superagent / 自动化任务 /
+  // 我的工作台 / 更多) pack two per row in the expanded column, returning their
+  // height to the workspace list. Pure CSS over stable class suffixes; the
+  // collapsed rail is untouched.
+  ctx.effect(() => applySidebarPanelGrid(), 'dsh-ui-interaction: sidebar panel grid')
+
+  // Sidebar New Session CTA: repaint the column's primary action with the
+  // composer send button's coral palette, so the two calls to action carry the
+  // same two tokens. Pure CSS over the stable _newSession class suffix.
+  ctx.effect(() => applySidebarCta(), 'dsh-ui-interaction: sidebar new-session cta')
 
   // Branding retouch: drop the whale/fish logos and present the sidebar brand
   // as "Dsh Harness". Pure decorative chrome, disposed with the plugin.

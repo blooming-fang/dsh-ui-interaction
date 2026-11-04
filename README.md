@@ -17,16 +17,34 @@ Esc 逐层返回（模型 → 提供商 → 根 → 关闭）。`/model` 命令�
 
 > 当前对齐 **dsh 0.1.7-alpha.1**：目录来自 Host 代次共享的 `modelCatalog` + 本会话持久化的 `modelSelection` projection，提交走 `remote.session.selectModel`。详见 [AGENTS.md](AGENTS.md#目标-dsh-版本版本对齐)。
 
-### 霓虹氛围背景光晕
+### 外观主题：暖纸质（warm paper）
 
-为整个 GUI 页面背景叠加**多个大小不一的柔和彩色光晕**（仅紫、蓝两色），营造克制的霓虹氛围，并让页面不再是纯白。光晕是固定、透明不拦点击的装饰层，铺在 app 内容之下（`#root` 被提升到光晕之上）。
+把一整套设计令牌（珊瑚橙主色 + 暖米白画布 + 同族暖炭黑暗色面）折进 ui-theme 的别名令牌层，整个 GUI 一键换肤，不改任何组件：
 
-- **非纯白背景** —— 光晕层自备页面背景：亮色主题为淡蓝灰 `#FBFCFE`，暗色主题为深灰；app 基础表面背景置为透明以露出这层背景与光晕。
-- **两色、多光晕、错落大小** —— 紫与蓝两个色调，但以多个尺寸不同的光晕池（56vw ~ 24vw）错落分布在页面四周，各自缓慢漂移、缩放。
-- **淡雅克制** —— 光晕强度刻意压低：亮色主题几乎不可察觉，暗色主题稍强但仍属氛围而非饱和色块。
-- **配套表面微调** —— composer 输入框卡片去掉悬浮阴影（扁平）；用户消息气泡加一个比背景深的边框，作为清晰的消息边界；暗色主题下 markdown 内容正文从 `--dsw-alias-label-primary` 降为 `--dsw-alias-label-secondary`，让助手正文在更深沉的霓虹背景下更安静；亮色主题下代码块头部横幅背景改为中性白 `--dsw-static-neutral-bluish-00`，markdown 内联代码块背景同样改为纯白；亮色主题下聊天内容区内所有背景用 `--dsw-alias-markdown-code-block` 的表面（代码块、命令卡片、上下文注入、工具行、JSON 块等）整体改为纯白；亮色主题下本轮交付文件卡片（PresentedFileCard）背景改为纯白；消息列内相邻可见消息条目的上边距从 16px 收紧为 4px，连续消息贴合更紧；左侧侧栏的「新会话」按钮（`[class$="_newSession"]`）改为玻璃拟态样式（半透明磨砂 + 背景模糊 + 内高光与柔影，亮/暗主题分别适配）。
-- **主题适配** —— 跟随 body 的 `data-ds-dark-theme` 自动切换，无需 JS。
-- **无障碍** —— 尊重 `prefers-reduced-motion`，减弱动画时仅保留静态光晕。
+- **主色** —— 珊瑚橙 `#cc785c`（按下态 `#a9583e`、禁用态 `#e6dfd8`），用作品牌色、主按钮填充、发送按钮、链接、选中态与焦点环。
+- **亮色面** —— 画布 `#f5f0e4`；三级米色抬升面 `#efe9db` / `#e9e1d1` / `#e1d7c4`；文字阶梯 `#141413` → `#3d3d3a` → `#6c6a64` → `#857f74`；发丝线 `#dfd5c5` / `#e6ddcd`。
+- **暗色面** —— 画布 `#1e1c18`；抬升面 `#26231e` / `#2c2924` / `#35312a`；文字 `#efebe4` / `#a8a49c` / `#918d84`；主色仍为珊瑚橙（在暖炭黑上 5.5:1），强调文字改用浅珊瑚 `#e0997c`。
+- **不刺眼** —— 比设计系统原值整条下压约 7% 亮度（画布 `#faf9f5` → `#f5f0e4`，相对亮度 0.947 → 0.873），暖色相不变、正文对比度反而更高；暗色则把画布抬高一点、最亮文字从纯白降到 `#efebe4`，避免「纯黑 + 纯白」的硬对比。
+- **纳入主题的表面** —— 页面/卡片/弹层/菜单（半透明暖米白 + 背景模糊）、侧栏、用户气泡、composer 输入卡、markdown 代码块与内联代码、diff 底色、滚动条、toast/tooltip、设置卡片，以及会话状态色（成功/警告/错误）全部随调色板走。
+- **排版** —— 复刻设计系统的「编辑体衬线标题 + humanist sans 正文」拆分：正文/界面用 StyreneB / Inter（回落系统中西文字体），代码用 JetBrains Mono / SF Mono；markdown 标题与品牌文字用 Copernicus / Tiempos Headline（回落 Cormorant Garamond / EB Garamond / Garamond，中文回落宋体），并强制 **衬线字重 400 + 负字距**（h1 -1px / h2 -0.5px / h3-h4 -0.3px）——设计系统里 display 字重永不加粗。
+- **圆角** —— 采用设计系统更克制的一档：4 / 6 / 8 / 12 / 16px。
+- **层级靠色块** —— 覆盖四个阴影令牌为暖墨低透明度阴影，深度主要由米色/暗色阶提供，不引入中性黑重投影（设计原则：color-block first, shadow rare）。
+- **跟随用户偏好** —— 亮/暗（含 `system`）仍由 Settings 决定，主题只覆盖颜色与字形，不会抢走用户选择；用户自选字体依旧优先于主题默认字体栈。
+- **克制且可逆** —— 单一 `overrideTokens` 图层，插件卸载即整体撤下，恢复内置调色板。
+
+### 侧边栏面板两列网格
+
+左侧栏顶部的全局面板行（插件 / Superagent / 自动化任务 / 我的工作台 / 更多）从**单列改成两列网格**：
+
+- **省高度** —— 5 个面板从 5 行压到 3 行（每行 32px），中间省下的接近 80px 全部还给下面的工作区/会话列表。
+- **列数自适应** —— `repeat(auto-fit, minmax(104px, 1fr))`：默认栏宽下正好两列；把侧栏拖得很窄时自动退回单列，标签用省略号而不是溢出。
+- **奇数列收尾** —— 面板数为奇数时，最后一行（「更多」）跨两列，不留半格空洞。
+- **折叠轨道保持不变** —— 收起侧栏后的纯图标轨道仍是单列 36×36。
+- **纯 CSS** —— 只按 class local 名后缀（`_panelList` / `_panelRow` / `_panelTitle`）定位，不改组件、不接数据，React 重渲染不会撤销。
+
+### 侧栏「新会话」主按钮
+
+新会话按钮不再用「中性底 + 发丝线」，改为与 composer 发送按钮**同一套色值**：珊瑚橙填充（`--dsw-alias-button-info-fill`）、白色文字与图标、hover 走 `--dsw-alias-button-info-hover`。两个主操作共用同两个令牌，主题换色时一起走；形状、尺寸、快捷键提示条都不动，折叠轨道的图标按钮也不受影响。
 
 ### 品牌改版：去掉 logo，保留品牌文字
 
@@ -56,7 +74,7 @@ dsh plugin --profile web add dsh-ui-interaction
 
 本包是一个双面（dual-face）包：其 `cordis.patch.yml` 禁用被替换的内置表面行（当前为 `ui-model-selection`）并插入本包自己的行；`dsh.client` 浏览器端在同一 slot/命令上提供替换实现。就当前模型选择器而言：两个入口（composer 席位与 `/model`）共享一份按会话的模型目录——由「Host 代次共享的模型目录 `remote.session.modelCatalog()`」与「本会话持久化的 `modelSelection` projection」合成，提交走 `remote.session.selectModel`；任一端做出的切换都会反映到另一端，语义与内置版本一致。
 
-霓虹光晕背景则是纯装饰层：浏览器端 `apply` 挂载一个固定的全屏层与全局样式，随插件生命周期挂载/卸载，不接入任何 slot 或数据。光晕层自备页面背景（亮色 `#FBFCFE` / 暗色深灰）并叠加紫蓝光晕；它通过 `!important` 覆盖 `--dsw-alias-bg-base`、`--dsw-specific-sidebar-fill` 为透明，让 app 的基础表面透出这层背景与光晕，并顺带处理 composer 输入框阴影与用户消息边框这两处表面微调。
+外观主题则挂在 ui-theme 的官方扩展点上：`apply` 通过 `ctx.inject(['theme'], …)` 取到 ui-theme 的 `ctx.theme` 服务，用 `overrideTokens(source, { light, dark })` 压上一层令牌（每个令牌都给出亮/暗两个值，因此一层覆盖两种配色），由 ui-theme 自己的 presenter 写进 `body` 的内联自定义属性；另有一张插件自带样式表承载 `:root` 级默认字体栈、圆角刻度与 markdown 标题的衬线字体。整层随插件卸载一起撤下。
 
 ## 开发者
 
@@ -64,7 +82,9 @@ dsh plugin --profile web add dsh-ui-interaction
 - `src/client/directory.ts` 与 `service.ts` —— 共享的按会话目录与 `modelDirectories` 服务。
 - `src/client/catalog.ts` —— Host 代次共享的模型目录（`remote.session.modelCatalog()`）。
 - `src/client/describe.ts` —— 行 id 与内置模型描述的本地化。
-- `src/client/neon-glow.ts` —— 霓虹背景光晕层与全局样式。
+- `src/client/theme.ts` —— 暖纸质外观主题：调色板（亮/暗成对）、ui-theme 令牌图层与字体/圆角样式表。
+- `src/client/sidebar-panels.ts` —— 侧边栏全局面板的两列网格（纯 CSS，仅展开态）。
+- `src/client/sidebar-cta.ts` —— 侧栏「新会话」主按钮：与发送按钮同色值（纯 CSS，仅展开态）。
 - `src/client/branding.ts` —— 品牌改版：隐藏鲸鱼/鱼形 logo，保留品牌文字（纯 CSS）。
 - `cordis.patch.yml` —— 禁用被替换表面并插入本包的层。
 - 参见 [AGENTS.md](AGENTS.md) 了解包契约、不可回退的不变量与新增功能的流程。
@@ -77,7 +97,7 @@ dsh plugin --profile web add dsh-ui-interaction
 cd plugins/dsh-ui-interaction
 pnpm install && pnpm run build
 npm pack
-# 生成 dsh-ui-interaction-0.1.7.tgz
+# 生成 dsh-ui-interaction-0.1.13.tgz
 ```
 
 在中文 Windows（ANSI 代码页 936）上，构建需强制使用 UTF-8；`scripts/build.mjs` 会自动处理。参见 [AGENTS.md](AGENTS.md#构建与编码)。
