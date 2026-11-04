@@ -40,6 +40,7 @@ import { ModelSelect } from './ModelSelect.tsx'
 import { applyThemeStyle, applyThemeTokens, type ThemeTokenHost } from './theme.ts'
 import { applySidebarPanelGrid } from './sidebar-panels.ts'
 import { applySidebarCta } from './sidebar-cta.ts'
+import { applyComposerFrame } from './composer-frame.ts'
 import { applyDshBranding } from './branding.ts'
 import { en, zh, type ModelKey } from './locales.ts'
 
@@ -134,6 +135,11 @@ export function apply(ctx: ClientContext): void {
   // composer send button's coral palette, so the two calls to action carry the
   // same two tokens. Pure CSS over the stable _newSession class suffix.
   ctx.effect(() => applySidebarCta(), 'dsh-ui-interaction: sidebar new-session cta')
+
+  // Composer frame: the message input's edge is only a 0.5px hairline in the
+  // same tone as its fill, which disappears on the warm-paper palette. This
+  // adds a coral ring (outline, so no layout change) that deepens on focus.
+  ctx.effect(() => applyComposerFrame(), 'dsh-ui-interaction: composer frame')
 
   // Branding retouch: drop the whale/fish logos and present the sidebar brand
   // as "Dsh Harness". Pure decorative chrome, disposed with the plugin.

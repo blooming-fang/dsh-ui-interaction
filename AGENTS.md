@@ -11,7 +11,8 @@
 2. **暖纸质外观主题** —— 把一整套设计令牌（珊瑚橙主色 `#cc785c` + 暖米白画布 `#f5f0e4` + 同族暖炭黑暗色面）通过 ui-theme 的 `ctx.theme.overrideTokens` 压进别名令牌层，配套 StyreneB / Inter / JetBrains Mono 字体栈与更克制的圆角刻度；亮/暗两套值成对给出，一处注册覆盖两种配色。
 3. **侧边栏面板两列网格** —— 把左侧栏顶部的全局面板行（插件 / Superagent / 自动化任务 / 我的工作台 / 更多）从单列改成两列网格，5 个面板从 5 行压到 3 行，省下的高度全给下面的工作区列表。
 4. **侧栏「新会话」主按钮** —— 把新会话按钮从「中性底 + 发丝线」改成与 composer 发送按钮同一套珊瑚橙色值（`button-info-fill` / `button-info-hover` + 白字）。
-5. **品牌改版** —— 去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**：隐藏 `FishLogo`（侧栏品牌 mark slot 的折叠态工具栏与展开态头部、新会话英雄区的动态鱼形头图），保留侧栏 `sidebar.brand.name` 的无 logo wordmark 文字。
+5. **输入框高亮描边** —— composer 的边界原本只是和卡片底色同调的 0.5px 发丝线（`--dsw-elevation-soft`），在暖米色主题上几乎看不见；加一圈珊瑚色 `outline` 环，输入时加深。
+6. **品牌改版** —— 去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**：隐藏 `FishLogo`（侧栏品牌 mark slot 的折叠态工具栏与展开态头部、新会话英雄区的动态鱼形头图），保留侧栏 `sidebar.brand.name` 的无 logo wordmark 文字。
 
 **后续规划**：在本包内继续增加其它交互优化。每个新优化应遵循下文「新增一个优化功能」的流程，并与现有功能在同一 patch 层内共处。
 
@@ -87,6 +88,22 @@
 - 定位必须用 local 名后缀，**不得**依赖 hashed 前缀；也**不得**靠 `!important` 抢层级。
 - 这是纯呈现：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
 
+## 当前功能：输入框高亮描边（composer-frame.ts）
+
+composer 的卡片**没有 CSS 边框**：它的边是共享的 elevation 发丝线（`--dsw-elevation-soft` 里的 `0 0 0 .5px`，颜色 `--dsw-alias-border-l2`），和卡片填充 `--dsw-specific-input-major` 是同一档暖米色。在暖纸质主题上这条 0.5px 几乎不可见，输入框读不出「输入框」的形状。本层给它加一圈 **珊瑚色高亮环**，聚焦时加深。
+
+- **用 `outline` 而不是 `border`** —— `border` 会占布局（卡片会变胖 4px、内容重排）；`outline` 不参与布局，且会跟随 `border-radius`，用 `outline-offset: -1px` 压在原发丝线上，尺寸零变化。
+- **颜色与主题同源** —— 环色是 `color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, var(--dsw-specific-input-major))`：把珊瑚橙与卡片自身的填充混合，亮色下是暖珊瑚棕、暗色下是压深的珊瑚，两套配色都成立，且主题换色时自动跟随。
+- **两档状态** —— 静止 50% 混合、2px；`:focus-within` 升到 85% 混合（`outline-color` 过渡 .15s）。宽度固定 2px：Chromium 在某些缩放档会把小数值的 outline 宽度取整，1.5px 会掉到 1px 而失去分量。
+- **稳定锚点** —— `[data-composer-card]`：ui-conversation 给卡片打的稳定 data 属性，不涉及 hashed 类名。
+- **纯装饰** —— 不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
+
+**不可回退的不变量**：
+- 必须用 `outline`（或等价的零布局方案），**不得**改成 `border` 把卡片撑大。
+- 环色必须从 `--dsw-alias-brand-primary` 混出，**不得**写死十六进制色（暗色主题会失配）。
+- 定位必须用 `data-composer-card`，**不得**依赖 hashed 类名。
+- 这是纯呈现：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
+
 ## 当前功能：品牌改版（branding.ts）
 
 `dsh-ui-interaction` 还在浏览器端挂载一层**品牌改版**（`branding.ts`），去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**。
@@ -112,7 +129,7 @@ dsh-ui-interaction/
 ├── cordis.patch.yml      # 组合层：禁用 ui-model-selection，插入本包行
 ├── src/
 │   ├── index.ts          # 节点端 — 有意为空（纯浏览器 UI）
-│   └── client/           # 浏览器端（模型选择 + 外观主题 + 侧栏网格/主按钮 + 品牌改版）
+│   └── client/           # 浏览器端（模型选择 + 外观主题 + 侧栏网格/主按钮 + 输入框描边 + 品牌改版）
 │       ├── index.ts      # apply()：服务 + /model popup + composer 席位 + 主题/网格挂载
 │       ├── service.ts    # ModelDirectoryResolver（ctx.modelDirectories）
 │       ├── catalog.ts    # ModelCatalogDirectory：Host 代次共享的模型目录
@@ -123,6 +140,7 @@ dsh-ui-interaction/
 │       ├── theme.ts      # 暖纸质外观主题：调色板、ui-theme 令牌层、字体与圆角样式表
 │       ├── sidebar-panels.ts # 侧边栏全局面板两列网格（纯 CSS）
 │       ├── sidebar-cta.ts   # 侧栏「新会话」主按钮：与发送按钮同色值
+│       ├── composer-frame.ts # 输入框珊瑚色高亮描边（outline，零布局）
 │       ├── branding.ts   # 品牌改版：隐藏鲸鱼/鱼形 logo，保留品牌文字（纯 CSS）
 │       ├── ModelSelect.tsx        # 两级「提供商 → 模型」席位
 │       └── ModelSelect.module.css
@@ -236,11 +254,11 @@ Select-String -Path lib/client.js -Pattern 'require\("([^"]+)"\)' -AllMatches |
 
 ```sh
 # 构建 + 打包（prepack 运行完整性门槛）
-cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.14.tgz
+cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.15.tgz
 
 # 安装进 web profile（从源码目录或 tgz 路径均可）
 dsh plugin --profile web add D:\path\to\dsh-ui-interaction           # from source dir
-dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.14.tgz
+dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.15.tgz
 dsh plugin --profile web remove dsh-ui-interaction                   # 移除依赖 + 层
 # 安装/移除后重启 `dsh web`
 ```

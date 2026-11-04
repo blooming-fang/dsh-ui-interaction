@@ -47,6 +47,10 @@ Esc 逐层返回（模型 → 提供商 → 根 → 关闭）。`/model` 命令�
 
 新会话按钮不再用「中性底 + 发丝线」，改为与 composer 发送按钮**同一套色值**：珊瑚橙填充（`--dsw-alias-button-info-fill`）、白色文字与图标、hover 走 `--dsw-alias-button-info-hover`。两个主操作共用同两个令牌，主题换色时一起走；形状、尺寸、快捷键提示条都不动，折叠轨道的图标按钮也不受影响。
 
+### 输入框高亮描边
+
+composer 原本只有一条和卡片底色同调的 0.5px 发丝线（共享的 elevation 描边），在暖米色主题上几乎看不见。现在加一圈珊瑚色环：静止 2px（珊瑚 50% 混入卡片填充），聚焦时加深到 85%。用 `outline` 而不是 `border`，所以卡片尺寸与内容布局完全不变；颜色从 `--dsw-alias-brand-primary` 混出，亮/暗主题都成立。
+
 ### 品牌改版：去掉 logo，保留品牌文字
 
 去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**：
@@ -86,6 +90,7 @@ dsh plugin --profile web add dsh-ui-interaction
 - `src/client/theme.ts` —— 暖纸质外观主题：调色板（亮/暗成对）、ui-theme 令牌图层与字体/圆角样式表。
 - `src/client/sidebar-panels.ts` —— 侧边栏全局面板的两列网格（纯 CSS，仅展开态）。
 - `src/client/sidebar-cta.ts` —— 侧栏「新会话」主按钮：与发送按钮同色值（纯 CSS，仅展开态）。
+- `src/client/composer-frame.ts` —— 输入框珊瑚色高亮描边（outline，零布局）。
 - `src/client/branding.ts` —— 品牌改版：隐藏鲸鱼/鱼形 logo，保留品牌文字（纯 CSS）。
 - `cordis.patch.yml` —— 禁用被替换表面并插入本包的层。
 - 参见 [AGENTS.md](AGENTS.md) 了解包契约、不可回退的不变量与新增功能的流程。
@@ -98,7 +103,7 @@ dsh plugin --profile web add dsh-ui-interaction
 cd plugins/dsh-ui-interaction
 pnpm install && pnpm run build
 npm pack
-# 生成 dsh-ui-interaction-0.1.14.tgz
+# 生成 dsh-ui-interaction-0.1.15.tgz
 ```
 
 在中文 Windows（ANSI 代码页 936）上，构建需强制使用 UTF-8；`scripts/build.mjs` 会自动处理。参见 [AGENTS.md](AGENTS.md#构建与编码)。
