@@ -40,7 +40,8 @@ Esc 逐层返回（模型 → 提供商 → 根 → 关闭）。`/model` 命令�
 - **列数自适应** —— `repeat(auto-fit, minmax(104px, 1fr))`：默认栏宽下正好两列；把侧栏拖得很窄时自动退回单列，标签用省略号而不是溢出。
 - **奇数列收尾** —— 面板数为奇数时，最后一行（「更多」）跨两列，不留半格空洞。
 - **折叠轨道保持不变** —— 收起侧栏后的纯图标轨道仍是单列 36×36。
-- **纯 CSS** —— 只按 class local 名后缀（`_panelList` / `_panelRow` / `_panelTitle`）定位，不改组件、不接数据，React 重渲染不会撤销。
+- **不抖** —— 行高与网格轨道都钉死在 32px。class 用 local 名**片段**匹配（`[class*="_panelRow"]`）：React 会把 `_panelActive` / `_wide` 这类状态类追加在后面，若用后缀匹配，选中那一行会掉出规则、回到 ui-sidebar 的 36px 度量，点一下整列就抖一下。
+- **纯 CSS** —— 只按 class local 名片段定位，不改组件、不接数据，React 重渲染不会撤销。
 
 ### 侧栏「新会话」主按钮
 
@@ -97,7 +98,7 @@ dsh plugin --profile web add dsh-ui-interaction
 cd plugins/dsh-ui-interaction
 pnpm install && pnpm run build
 npm pack
-# 生成 dsh-ui-interaction-0.1.13.tgz
+# 生成 dsh-ui-interaction-0.1.14.tgz
 ```
 
 在中文 Windows（ANSI 代码页 936）上，构建需强制使用 UTF-8；`scripts/build.mjs` 会自动处理。参见 [AGENTS.md](AGENTS.md#构建与编码)。

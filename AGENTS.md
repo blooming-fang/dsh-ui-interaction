@@ -56,15 +56,18 @@
 
 - **挂载方式** —— `apply` 通过 `ctx.effect` 调用 `applySidebarPanelGrid()`，注入一张纯 CSS 样式表（与 `applyThemeStyle` / `applyDshBranding` 同款模式）；卸载时移除。
 - **只需 CSS 的原因** —— 这些行就是 ui-sidebar 自己渲染的普通 `<button>`，整个列表是一个 `<nav>`；重排它不需要数据、slot 或命令，所以一串样式规则就是全部改动，React 重渲染也不会撤销。
-- **稳定选择器** —— 只用 class **local 名后缀**定位：`[class$="_panelList"]`（nav）、`[class$="_panelRow"]`（行按钮）、`[class$="_panelTitle"]`（行标签）。哈希前缀每次构建都变，绝不写死。
+- **稳定选择器** —— 只用 class **local 名片段**定位，且必须用 `*=`：`[class*="_panelList"]`（nav）、`[class*="_panelRow"]`（行按钮）、`[class*="_panelTitle"]`（行标签）。哈希前缀每次构建都变，绝不写死。
+- **不能用 `$=` 后缀匹配（踩过的坑）** —— React 会把状态类**追加**在 local 类后面：选中行是 `…_panelRow …_panelActive`、宽态标签是 `…_panelTitle …_wide`。后缀匹配因此会**恰好漏掉变化了状态的那一行**：选中行掉回 ui-sidebar 自己的 `min-height:36px; padding:7px 8px; line-height:22px` 度量，点一下这一格就长高 4px，整列网格随之抖一下（用户报告的抖动就是这个）。改成片段匹配后所有行都被规则覆盖。
+- **盒模型钉死** —— 除了选择器正确，行本身也把 `height: 32px` / `padding: 0 8px` / `line-height: 20px` 写死，nav 再加 `grid-auto-rows: 32px`：即使将来又冒出别的状态类带来不同度量，也不会再把轨道撑开。
 - **列数** —— `grid-template-columns: repeat(auto-fit, minmax(104px, 1fr))`：默认栏宽下正好两列；把侧栏拖得很窄时自动退回单列（行标签本来就有 ellipsis，不会溢出）。`> *` 统一 `display: flex; min-width: 0`，因为每行外面包着一层 primitives 的 Tooltip（有无 wrapper 都能撑满）。
 - **奇数列收尾** —— `> *:last-child:nth-child(odd)` 让最后一行（当前是「更多」）跨两列，不留下半格空洞。
-- **折叠轨道不受影响** —— ui-sidebar 只在轨道态给根元素加 `…_collapsed` local 类，而轨道态的行是固定 36×36 的纯图标按钮。所有规则都挂在 `[class$="_panelList"]:not([class*="_collapsed"] *)` 上，因此只作用于展开态。
+- **折叠轨道不受影响** —— ui-sidebar 只在轨道态给根元素加 `…_collapsed` local 类，而轨道态的行是固定 36×36 的纯图标按钮。所有规则都挂在 `[class*="_panelList"]:not([class*="_collapsed"] *)` 上，因此只作用于展开态。
 - **纯装饰** —— 不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
 
 **不可回退的不变量**：
 - 只作用于展开态；折叠轨道（36×36 图标列）**不得**被网格化。
-- 定位必须用 local 名后缀，**不得**依赖每次构建会变的 hashed 前缀。
+- 定位必须用 local 名**片段**（`*=`），**不得**依赖每次构建会变的 hashed 前缀；也**不得**改成 `$=` 后缀匹配（状态类会被追加在后面，选中行会掉出规则）。
+- 行的几何必须钉死（行高 32px + 轨道 32px），**不得**只给 `min-height`：否则任何状态类的度量变化都会让整列抖一下。
 - 布局必须能优雅退化：窄栏回落到单列，标签 ellipsis 而不是溢出/换行。
 - 这是纯呈现：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
 
@@ -73,7 +76,7 @@
 左侧栏的新会话按钮原本是「中性底（`--dsw-alias-button-elevated-fill`）+ 1px 发丝线 + 墨色文字」，和下面的面板行长得太像，不像是这一列的主操作。本层把它换成 **composer 发送按钮的同一套色值**：填充 `--dsw-alias-button-info-fill`（珊瑚橙）、文字纯白、hover `--dsw-alias-button-info-hover`。两个主操作因此共用同两个令牌，主题改色时一起走。
 
 - **挂载方式** —— `apply` 通过 `ctx.effect` 调用 `applySidebarCta()`，注入纯 CSS 样式表（与 `applySidebarPanelGrid` / `applyDshBranding` 同款）；卸载时移除。
-- **稳定选择器** —— `body [class$="_newSession"]:not([class*="_collapsed"] *)`：class 只按 local 名后缀匹配；`body` 前缀把特异性抬到 (0,2,0) 以压过 ui-sidebar 的 `[data-platform=darwin]` 与轨道规则，**不用 `!important`**。
+- **稳定选择器** —— `body [class$="_newSession"]:not([class*="_collapsed"] *)`：这里刻意用 **`$=` 后缀**而不是片段匹配，因为同一个前缀家族里还有 `…_newSessionLabel` / `…_newSessionContent` / `…_newSessionShortcut`，用 `*=` 会把它们一起染成珊瑚底。`body` 前缀把特异性抬到 (0,2,0) 以压过 ui-sidebar 的 `[data-platform=darwin]` 与轨道规则，**不用 `!important`**。
 - **只作用于展开态** —— 折叠轨道里同一个按钮是 36×36 无边框图标，铺珊瑚橙会变成一块重色点，因此排除。
 - **不改变形状** —— 只换色值：圆角、尺寸、内边距、快捷键提示条都还是 ui-sidebar 自己的；hover 时右侧的快捷键 chip 也染成白色（原本是三级文字色）。
 - **纯装饰** —— 不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
@@ -233,11 +236,11 @@ Select-String -Path lib/client.js -Pattern 'require\("([^"]+)"\)' -AllMatches |
 
 ```sh
 # 构建 + 打包（prepack 运行完整性门槛）
-cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.13.tgz
+cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.14.tgz
 
 # 安装进 web profile（从源码目录或 tgz 路径均可）
 dsh plugin --profile web add D:\path\to\dsh-ui-interaction           # from source dir
-dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.13.tgz
+dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.14.tgz
 dsh plugin --profile web remove dsh-ui-interaction                   # 移除依赖 + 层
 # 安装/移除后重启 `dsh web`
 ```

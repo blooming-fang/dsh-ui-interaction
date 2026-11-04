@@ -1,6 +1,6 @@
 {
   "name": "dsh-ui-interaction",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "UI interaction optimizations for the DeepSeek Harness web GUI: the provider-first two-level model picker, a warm-paper appearance theme (coral accent on cream canvas, with matching dark surfaces), a two-column sidebar panel grid plus a coral New Session CTA, and a logo-free brand retouch; more improvements to come",
   "keywords": [
     "deepseek-harness",
