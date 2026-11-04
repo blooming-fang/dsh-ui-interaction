@@ -63,6 +63,10 @@ composer 原本只有一条和卡片底色同调的 0.5px 发丝线（共享的 
 
 本包会继续加入其它交互优化。每个新优化都在同一 patch 层内、按统一的接入缝隙（slot 注册、命令贡献、ctx 服务）叠加，并附带有明确的接管/覆盖关系。
 
+## 插件卡片
+
+在「插件」面板里本包显示为一块珊瑚色图标（`icon.svg`，36×36 viewBox）+ 中文标题与一句话介绍（`locale/zh.json`，`locale/en.json` 作为基准）。图标与文案都是包内静态资源：`package.json` 的 `icon` 指向图标，`locale/*.json` 提供 `meta.title` / `meta.description` 并在 `exports` 中导出；两者缺失时卡片会退回默认图标 + 包名 + `description`。
+
 ## 安装
 
 需要一个已初始化的 web profile。从 npm 安装（已发布）：
@@ -103,7 +107,7 @@ dsh plugin --profile web add dsh-ui-interaction
 cd plugins/dsh-ui-interaction
 pnpm install && pnpm run build
 npm pack
-# 生成 dsh-ui-interaction-0.1.16.tgz
+# 生成 dsh-ui-interaction-0.1.18.tgz
 ```
 
 在中文 Windows（ANSI 代码页 936）上，构建需强制使用 UTF-8；`scripts/build.mjs` 会自动处理。参见 [AGENTS.md](AGENTS.md#构建与编码)。

@@ -121,11 +121,27 @@ composer 的卡片**没有 CSS 边框**：它的边是共享的 elevation 发丝
 - 用 `display: none` 隐藏而非删除节点，避免 React 重新创建。
 - 这是纯装饰：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
 
+## 插件身份：icon 与本地化显示文本
+
+插件管理页（`dsh-client-ui-plugin-manager`）的卡片用宿主侧 `readPluginMeta`（`dsh-app-boot`）读到的 `meta` 渲染：图标 + 标题 + 一句话介绍。两者都要显式声明，否则卡片会退化成默认图标 + 包名 + 英文 `description`。
+
+- **图标** —— `package.json` 顶层 `"icon": "./icon.svg"`，值必须是**相对包根的路径**（绝对路径、URL 都会被拒），支持 `.svg / .png / .jpg / .jpeg / .webp`，未压缩上限 256KB；宿主会把它转成 `data:` URL 交给卡片渲染。图标按 **36×36 viewBox** 设计：卡片是 48px 框内渲染 36px，列表行是 40px 框内渲染 30px。`icon.svg` 必须进 `files`，否则不随包发布。
+- **本地化显示文本** —— `locale/<language>.json`，形如 `{ "meta": { "title": "...", "description": "..." } }`；`en.json` 是必需基准（宿主由它发现整个 locale 目录），其余语言按 `LANGUAGE_ID` 命名（`zh`、`zh-CN` 都合法）。**必须同时在 `exports` 里导出 `"./locale/*.json"`** —— 宿主是用包导出解析出的路径去读这些 JSON 的；漏了这条，`meta` 会静默退回包名 + 英文 `description`（踩过一次：图标生效而标题仍是包名）。
+- **回退链** —— locale 文案缺失时回退到 `package.json` 的 `name` / `description`，所以 `description` 也写成中文，作为卡片与 npm 页面的兜底。
+- **生效时机** —— 宿主在清单加载时读一次；改完 `icon`/`locale` 后要**重启**桌面端才看到新标题（图标字段在下次清单刷新即可见，但别依赖这个时序）。
+
+**不可回退的不变量**：
+- `icon` 必须是包根相对路径且进 `files`；**不得**写绝对路径或 data URL。
+- `exports` 必须包含 `"./locale/*.json"`；`locale/en.json` 必须存在（它是 locale 目录的发现入口）。
+- `package.json` 的 `description` 保持中文，作为 locale 缺失时的兜底。
+
 ## 目录结构
 
 ```
 dsh-ui-interaction/
-├── package.json          # 声明 dsh.bundle.patch + dsh.client（双面包）
+├── package.json          # 声明 dsh.bundle.patch + dsh.client（双面包）+ icon + exports(locale)
+├── icon.svg              # 插件卡片图标（36×36 viewBox，珊瑚色块 + 布局图形）
+├── locale/zh.json        # 插件卡片本地化标题与一句话介绍（另需 en.json 作为发现入口）
 ├── cordis.patch.yml      # 组合层：禁用 ui-model-selection，插入本包行
 ├── src/
 │   ├── index.ts          # 节点端 — 有意为空（纯浏览器 UI）
@@ -254,11 +270,11 @@ Select-String -Path lib/client.js -Pattern 'require\("([^"]+)"\)' -AllMatches |
 
 ```sh
 # 构建 + 打包（prepack 运行完整性门槛）
-cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.16.tgz
+cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.18.tgz
 
 # 安装进 web profile（从源码目录或 tgz 路径均可）
 dsh plugin --profile web add D:\path\to\dsh-ui-interaction           # from source dir
-dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.16.tgz
+dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.18.tgz
 dsh plugin --profile web remove dsh-ui-interaction                   # 移除依赖 + 层
 # 安装/移除后重启 `dsh web`
 ```
