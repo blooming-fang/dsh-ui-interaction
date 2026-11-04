@@ -49,7 +49,7 @@ Esc 逐层返回（模型 → 提供商 → 根 → 关闭）。`/model` 命令�
 
 ### 输入框高亮描边
 
-composer 原本只有一条和卡片底色同调的 0.5px 发丝线（共享的 elevation 描边），在暖米色主题上几乎看不见。现在加一圈珊瑚色环：静止 2px（珊瑚 50% 混入卡片填充），聚焦时加深到 85%。用 `outline` 而不是 `border`，所以卡片尺寸与内容布局完全不变；颜色从 `--dsw-alias-brand-primary` 混出，亮/暗主题都成立。
+composer 原本只有一条和卡片底色同调的 0.5px 发丝线（共享的 elevation 描边），在暖米色主题上几乎看不见。现在加一圈珊瑚色环：**1px**（珊瑚 65% 混入卡片填充），聚焦时加深到 90%。用 `outline` 而不是 `border`，所以卡片尺寸与内容布局完全不变；颜色从 `--dsw-alias-brand-primary` 混出，亮/暗主题都成立。
 
 ### 品牌改版：去掉 logo，保留品牌文字
 
@@ -103,7 +103,7 @@ dsh plugin --profile web add dsh-ui-interaction
 cd plugins/dsh-ui-interaction
 pnpm install && pnpm run build
 npm pack
-# 生成 dsh-ui-interaction-0.1.15.tgz
+# 生成 dsh-ui-interaction-0.1.16.tgz
 ```
 
 在中文 Windows（ANSI 代码页 936）上，构建需强制使用 UTF-8；`scripts/build.mjs` 会自动处理。参见 [AGENTS.md](AGENTS.md#构建与编码)。

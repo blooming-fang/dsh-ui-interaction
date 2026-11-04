@@ -93,8 +93,8 @@
 composer 的卡片**没有 CSS 边框**：它的边是共享的 elevation 发丝线（`--dsw-elevation-soft` 里的 `0 0 0 .5px`，颜色 `--dsw-alias-border-l2`），和卡片填充 `--dsw-specific-input-major` 是同一档暖米色。在暖纸质主题上这条 0.5px 几乎不可见，输入框读不出「输入框」的形状。本层给它加一圈 **珊瑚色高亮环**，聚焦时加深。
 
 - **用 `outline` 而不是 `border`** —— `border` 会占布局（卡片会变胖 4px、内容重排）；`outline` 不参与布局，且会跟随 `border-radius`，用 `outline-offset: -1px` 压在原发丝线上，尺寸零变化。
-- **颜色与主题同源** —— 环色是 `color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, var(--dsw-specific-input-major))`：把珊瑚橙与卡片自身的填充混合，亮色下是暖珊瑚棕、暗色下是压深的珊瑚，两套配色都成立，且主题换色时自动跟随。
-- **两档状态** —— 静止 50% 混合、2px；`:focus-within` 升到 85% 混合（`outline-color` 过渡 .15s）。宽度固定 2px：Chromium 在某些缩放档会把小数值的 outline 宽度取整，1.5px 会掉到 1px 而失去分量。
+- **颜色与主题同源** —— 环色是 `color-mix(in srgb, var(--dsw-alias-brand-primary) N%, var(--dsw-specific-input-major))`（静止 65%、聚焦 90%）：把珊瑚橙与卡片自身的填充混合，亮色下是暖珊瑚棕、暗色下是压深的珊瑚，两套配色都成立，且主题换色时自动跟随。
+- **两档状态** —— 静止 **1px**、65% 混合；`:focus-within` 升到 90% 混合（`outline-color` 过渡 .15s）。宽度只要整像素：Chromium 在某些缩放档会把小数值的 outline 宽度取整，1.5px 会掉成比 1px 还轻，所以只用 1px 这一档，靠颜色承载分量。
 - **稳定锚点** —— `[data-composer-card]`：ui-conversation 给卡片打的稳定 data 属性，不涉及 hashed 类名。
 - **纯装饰** —— 不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
 
@@ -254,11 +254,11 @@ Select-String -Path lib/client.js -Pattern 'require\("([^"]+)"\)' -AllMatches |
 
 ```sh
 # 构建 + 打包（prepack 运行完整性门槛）
-cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.15.tgz
+cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.16.tgz
 
 # 安装进 web profile（从源码目录或 tgz 路径均可）
 dsh plugin --profile web add D:\path\to\dsh-ui-interaction           # from source dir
-dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.15.tgz
+dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.16.tgz
 dsh plugin --profile web remove dsh-ui-interaction                   # 移除依赖 + 层
 # 安装/移除后重启 `dsh web`
 ```

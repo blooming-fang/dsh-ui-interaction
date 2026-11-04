@@ -31,17 +31,18 @@ const CARD = '[data-composer-card]'
 
 export const COMPOSER_FRAME_CSS = [
   CARD + ' {',
-  /* 2px rather than a fractional width: Chromium rounds fractional outline
-     widths on some zoom levels and the ring loses its weight. The colour is the
-     coral accent thinned with the card's own fill, so the edge reads as a warm
-     tint instead of a second brand block. */
-  '  outline: 2px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, var(--dsw-specific-input-major));',
+  /* A single hairline, deliberately not a heavier frame. The colour carries the
+     weight instead: the coral accent thinned with the card's own fill, so the
+     edge reads as a warm tint rather than a second brand block. Whole pixel
+     widths only - Chromium rounds fractional outline widths on some zoom
+     levels, and 1.5px collapses to something lighter than this 1px. */
+  '  outline: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 65%, var(--dsw-specific-input-major));',
   '  outline-offset: -1px;',
   '  transition: outline-color .15s var(--ds-ease-in-out, ease-in-out);',
   '}',
   /* While the user is typing, the ring goes to the accent itself. */
   CARD + ':focus-within {',
-  '  outline-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 85%, var(--dsw-specific-input-major));',
+  '  outline-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 90%, var(--dsw-specific-input-major));',
   '}',
   '',
 ].join('\n')
