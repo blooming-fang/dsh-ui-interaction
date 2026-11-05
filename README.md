@@ -51,6 +51,16 @@ Esc 逐层返回（模型 → 提供商 → 根 → 关闭）。`/model` 命令�
 
 composer 原本只有一条和卡片底色同调的 0.5px 发丝线（共享的 elevation 描边），在暖米色主题上几乎看不见。现在加一圈珊瑚色环：**1px**（珊瑚 65% 混入卡片填充），聚焦时加深到 90%。用 `outline` 而不是 `border`，所以卡片尺寸与内容布局完全不变；颜色从 `--dsw-alias-brand-primary` 混出，亮/暗主题都成立。
 
+### 全站过渡动效
+
+产品原本几乎没有任何过渡：743 条会改变颜色的 hover / focus 状态规则里只有 11.7% 声明了 `transition`，primitives 的 Button / Input / Menu / Pill / Tag 更是零过渡，所以所有交互都是「一帧硬切」。本层补上这个底座：
+
+- **只过渡颜色** —— `background-color` / `color` / `border-color` / `outline-color` / `box-shadow` / `opacity`，hover 与 focus 100ms `ease-out`，阴影 200ms；**不碰任何尺寸与 `transform`**，不会重排布局，也不会和组件自己的动效（侧栏轨道、开关拇指、菜单淡入）打架。
+- **特异性归零** —— 选择器整体包在 `:where()` 里，组件自己声明的过渡（以及拖动侧栏时平台的「关掉过渡」开关）永远优先，本层只补空缺。
+- **覆盖范围** —— 语义选择（`button` / `[role="menuitem"]` / `[role="option"]` / `[role="tab"]` / `[role="switch"]` / `input` 等）加上行/卡片段（`_row` / `_card` / `_item` / `_chip` …），侧栏行、工作区行、插件卡、设置项、输入框一起变柔和。
+- **顺带修掉的一处** —— 侧栏「新会话」右侧的快捷键 chip 原本靠 `opacity` 0→1 硬跳出，现在淡入。
+- **尊重减动效偏好** —— 整层包在 `@media (prefers-reduced-motion: no-preference)` 内，系统设为减少动态时本层不存在。
+
 ### 品牌改版：去掉 logo，保留品牌文字
 
 去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**：
@@ -95,6 +105,7 @@ dsh plugin --profile web add dsh-ui-interaction
 - `src/client/sidebar-panels.ts` —— 侧边栏全局面板的两列网格（纯 CSS，仅展开态）。
 - `src/client/sidebar-cta.ts` —— 侧栏「新会话」主按钮：与发送按钮同色值（纯 CSS，仅展开态）。
 - `src/client/composer-frame.ts` —— 输入框珊瑚色高亮描边（outline，零布局）。
+- `src/client/motion.ts` —— 全站过渡动效：颜色/阴影/透明度底座（纯 CSS，零几何改动）。
 - `src/client/branding.ts` —— 品牌改版：隐藏鲸鱼/鱼形 logo，保留品牌文字（纯 CSS）。
 - `cordis.patch.yml` —— 禁用被替换表面并插入本包的层。
 - 参见 [AGENTS.md](AGENTS.md) 了解包契约、不可回退的不变量与新增功能的流程。
@@ -107,7 +118,7 @@ dsh plugin --profile web add dsh-ui-interaction
 cd plugins/dsh-ui-interaction
 pnpm install && pnpm run build
 npm pack
-# 生成 dsh-ui-interaction-0.1.18.tgz
+# 生成 dsh-ui-interaction-0.1.19.tgz
 ```
 
 在中文 Windows（ANSI 代码页 936）上，构建需强制使用 UTF-8；`scripts/build.mjs` 会自动处理。参见 [AGENTS.md](AGENTS.md#构建与编码)。

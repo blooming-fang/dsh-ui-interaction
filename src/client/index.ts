@@ -17,7 +17,9 @@
  * the ui-theme alias layer through `ctx.theme.overrideTokens`, with its
  * typography and radius scale carried by a plugin-owned stylesheet. A further
  * stylesheet (`sidebar-panels.ts`) folds the sidebar's global panel list into a
- * two-column grid so the workspace list keeps the height.
+ * two-column grid so the workspace list keeps the height. A motion layer
+ * (`motion.ts`) finally gives hover/focus states a base transition, which the
+ * product itself almost never declares.
  */
 // Type-only: the selection shape both entries submit.
 import type { ModelSelection } from '@deepseek-ai/dsh-api-session-controller/types'
@@ -42,6 +44,7 @@ import { applySidebarPanelGrid } from './sidebar-panels.ts'
 import { applySidebarCta } from './sidebar-cta.ts'
 import { applyComposerFrame } from './composer-frame.ts'
 import { applyDshBranding } from './branding.ts'
+import { applyMotion } from './motion.ts'
 import { en, zh, type ModelKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -140,6 +143,14 @@ export function apply(ctx: ClientContext): void {
   // same tone as its fill, which disappears on the warm-paper palette. This
   // adds a coral ring (outline, so no layout change) that deepens on focus.
   ctx.effect(() => applyComposerFrame(), 'dsh-ui-interaction: composer frame')
+
+  // Motion layer: the product declares a transition on barely 12% of its
+  // state-changing rules, so hover and focus swap colour in a single frame.
+  // This adds the missing base for colour, elevation and opacity only —
+  // geometry is never touched, and every selector sits in :where() so any
+  // component's own motion (or its "no transitions while dragging" switch)
+  // still wins.
+  ctx.effect(() => applyMotion(), 'dsh-ui-interaction: motion layer')
 
   // Branding retouch: drop the whale/fish logos and present the sidebar brand
   // as "Dsh Harness". Pure decorative chrome, disposed with the plugin.

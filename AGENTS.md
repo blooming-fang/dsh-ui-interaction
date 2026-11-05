@@ -12,7 +12,8 @@
 3. **侧边栏面板两列网格** —— 把左侧栏顶部的全局面板行（插件 / Superagent / 自动化任务 / 我的工作台 / 更多）从单列改成两列网格，5 个面板从 5 行压到 3 行，省下的高度全给下面的工作区列表。
 4. **侧栏「新会话」主按钮** —— 把新会话按钮从「中性底 + 发丝线」改成与 composer 发送按钮同一套珊瑚橙色值（`button-info-fill` / `button-info-hover` + 白字）。
 5. **输入框高亮描边** —— composer 的边界原本只是和卡片底色同调的 0.5px 发丝线（`--dsw-elevation-soft`），在暖米色主题上几乎看不见；加一圈珊瑚色 `outline` 环，输入时加深。
-6. **品牌改版** —— 去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**：隐藏 `FishLogo`（侧栏品牌 mark slot 的折叠态工具栏与展开态头部、新会话英雄区的动态鱼形头图），保留侧栏 `sidebar.brand.name` 的无 logo wordmark 文字。
+6. **全站过渡动效** —— 产品里 743 条会改颜色的状态规则只有 87 条（11.7%）声明了 `transition`，primitives 的 Button / Input / Menu / Pill / Tag / Tooltip 一条都没有，hover 与 focus 都是单帧硬切。本层补上这个底座：只过渡颜色/阴影/透明度（几何零改动），所有选择器包在 `:where()` 里让特异性归零，并整体挂在 `prefers-reduced-motion: no-preference` 下。
+7. **品牌改版** —— 去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**：隐藏 `FishLogo`（侧栏品牌 mark slot 的折叠态工具栏与展开态头部、新会话英雄区的动态鱼形头图），保留侧栏 `sidebar.brand.name` 的无 logo wordmark 文字。
 
 **后续规划**：在本包内继续增加其它交互优化。每个新优化应遵循下文「新增一个优化功能」的流程，并与现有功能在同一 patch 层内共处。
 
@@ -104,6 +105,26 @@ composer 的卡片**没有 CSS 边框**：它的边是共享的 elevation 发丝
 - 定位必须用 `data-composer-card`，**不得**依赖 hashed 类名。
 - 这是纯呈现：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
 
+## 当前功能：全站过渡动效（motion.ts）
+
+产品的动效底座几乎是空的。在已安装的 dsh 0.2.1-rc.5 上实测：全产品共有 **743 条**会改变颜色的 `:hover` / `:focus-visible` / `[aria-expanded]` 规则，其中只有 **87 条（11.7%）**声明了 `transition`；`dsh-client-ui-primitives` 的 `Button` / `Input` / `Menu` / `MenuSurface` / `Pill` / `Tag` / `Tooltip` / `Checkbox` 全都是零过渡（只有 `Switch` 的拇指、`SegmentedControl`、`DisclosureRow` 等少数几处自带）；侧栏 23 条、模型选择器 16 条、工作区 13 条状态规则也全是单帧硬切。ui-theme 其实已经给出了动效刻度 —— `--ds-transition-duration-fast` 0.1s / `--ds-transition-duration` 0.2s / `--ds-transition-duration-slow` 0.3s 与 `--ds-ease-in-out` —— 只是几乎没人消费。
+
+本层补的就是这个底座，**一张纯 CSS 样式表**：
+
+- **只过渡颜色类属性** —— `background-color` / `color` / `border-color` / `outline-color` / `box-shadow` / `opacity`。hover 与 focus 走 `--ds-transition-duration-fast`（100ms）+ `ease-out`；阴影走 `--ds-transition-duration`（200ms）+ `--ds-ease-in-out`。**绝不出现 `all`、`height`、`width`、`margin`、`transform`**：本层不能重排任何布局，也不能和自带动效的组件（侧栏轨道、switch 拇指、菜单 surface）抢同一个属性。
+- **特异性归零** —— 整个选择器列表包在 `:where()` 里。组件自己声明的 `transition`、以及侧栏拖动期间的 `[data-animating] … { transition: none }` 因此永远压过本层，本层只会在"原本没有任何过渡"的地方补一条。
+- **两种定位方式** —— 语义型（`button`、`[role="button"]`、`[role="menuitem"]`、`[role="option"]`、`[role="tab"]`、`[role="treeitem"]`、`[role="switch"]`、`a[href]`、`summary`、`input`、`textarea`、`select`）覆盖按钮与表单控件，不依赖 hashed 类名；片段型（`[class*="_row"]`、`_card`、`_item`、`_chip`、`_pill`、`_toggle`、`_trigger`、`_action`、`_file`、`_crumb`、`_close`、`_tab`）覆盖那些是普通 div 但会换底色的行/卡，一律用 `*=` 片段，不写死前缀。
+- **侧栏快捷键 chip** —— `…_newSessionShortcut` 靠 `opacity: 0 → 1` 出现且没有过渡（一 hover 就"啪"地跳出），单独补一条 `opacity` 100ms 淡入。
+- **减动效偏好** —— 整张表包在 `@media (prefers-reduced-motion: no-preference)` 里（平台有 105 处同样写法），偏好 reduce 时本层完全不存在。
+- **刻意不做的三件事** —— 菜单淡入平台已经自己做（`[data-menu-phase]` + `--dsh-menu-enter`，纯 opacity）；按下反馈（`scale(.98)`）与切主题的全局 crossfade 属于设计口味，未采纳；会话行 hover 操作按钮是 `display: none → inline-flex`，要改成常驻 + `opacity` 就会改布局，因此放弃。
+
+**不可回退的不变量**：
+- 只过渡颜色/阴影/透明度；**不得**加入 `all`、`height`、`width` 或 `transform` —— 那会重排布局，并和组件自有动效打架。
+- 选择器必须整体包在 `:where()` 里（特异性 0）；**不得**用 `!important` 或类选择器去压组件的 `transition` / `animation`。
+- 必须整体包在 `@media (prefers-reduced-motion: no-preference)` 内。
+- 时长与曲线读平台令牌并带 fallback（`var(--ds-transition-duration-fast, 100ms)`），**不得**另起一套写死的刻度。
+- 这是纯呈现：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
+
 ## 当前功能：品牌改版（branding.ts）
 
 `dsh-ui-interaction` 还在浏览器端挂载一层**品牌改版**（`branding.ts`），去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**。
@@ -145,7 +166,7 @@ dsh-ui-interaction/
 ├── cordis.patch.yml      # 组合层：禁用 ui-model-selection，插入本包行
 ├── src/
 │   ├── index.ts          # 节点端 — 有意为空（纯浏览器 UI）
-│   └── client/           # 浏览器端（模型选择 + 外观主题 + 侧栏网格/主按钮 + 输入框描边 + 品牌改版）
+│   └── client/           # 浏览器端（模型选择 + 外观主题 + 侧栏网格/主按钮 + 输入框描边 + 过渡动效 + 品牌改版）
 │       ├── index.ts      # apply()：服务 + /model popup + composer 席位 + 主题/网格挂载
 │       ├── service.ts    # ModelDirectoryResolver（ctx.modelDirectories）
 │       ├── catalog.ts    # ModelCatalogDirectory：Host 代次共享的模型目录
@@ -157,6 +178,7 @@ dsh-ui-interaction/
 │       ├── sidebar-panels.ts # 侧边栏全局面板两列网格（纯 CSS）
 │       ├── sidebar-cta.ts   # 侧栏「新会话」主按钮：与发送按钮同色值
 │       ├── composer-frame.ts # 输入框珊瑚色高亮描边（outline，零布局）
+│       ├── motion.ts     # 全站过渡动效：颜色/阴影/透明度底座（零几何改动）
 │       ├── branding.ts   # 品牌改版：隐藏鲸鱼/鱼形 logo，保留品牌文字（纯 CSS）
 │       ├── ModelSelect.tsx        # 两级「提供商 → 模型」席位
 │       └── ModelSelect.module.css
@@ -270,11 +292,11 @@ Select-String -Path lib/client.js -Pattern 'require\("([^"]+)"\)' -AllMatches |
 
 ```sh
 # 构建 + 打包（prepack 运行完整性门槛）
-cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.18.tgz
+cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.19.tgz
 
 # 安装进 web profile（从源码目录或 tgz 路径均可）
 dsh plugin --profile web add D:\path\to\dsh-ui-interaction           # from source dir
-dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.18.tgz
+dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.19.tgz
 dsh plugin --profile web remove dsh-ui-interaction                   # 移除依赖 + 层
 # 安装/移除后重启 `dsh web`
 ```
