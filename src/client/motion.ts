@@ -6,8 +6,9 @@
  * (0.3s) and `--ds-ease-in-out` — but almost nothing consumes it: of the ~743
  * rules in the product that change a colour on `:hover` / `:focus-visible` /
  * `[aria-expanded]`, only 11.7% declare a transition, and the primitives layer
- * (`Button`, `Input`, `Menu`, `Pill`, `Tag`, ...) declares none at all. Hover and
- * focus therefore swap colour in a single frame, which reads as stiff.
+ * (`Button`, `Input`, `Menu`, `Pill`, `Tag`, `Tooltip`, `Checkbox`) declares none
+ * at all. Hover and focus therefore swap colour in a single frame, which reads as
+ * stiff.
  *
  * This layer adds that base as one stylesheet: colour-ish properties only, never
  * geometry. Height, width, margin and `transform` are deliberately absent, so no
@@ -17,6 +18,16 @@
  * zero: any component that already declares a transition — or switches
  * transitions off while the user drags the sidebar — still wins, so this layer
  * only ever adds motion where there was none.
+ *
+ * The base is deliberately universal (`html`, `body` and every descendant)
+ * rather than a list of class fragments. The product's CSS-module names are
+ * hashed per build and camel-cased (`_sessionRow`, `_panelRow`, `_cardMain`), so a
+ * fragment list silently misses whole families — `[class*="_row"]` never matches
+ * `_sessionRow` — and the escape hatch would be to enumerate hundreds of names
+ * that rot on the next release. Since only colour properties are transitioned,
+ * applying them everywhere is safe: an element that does not repaint pays
+ * nothing, and an element that animates opacity or background through a
+ * keyframe or its own transition still wins on specificity.
  *
  * Pure presentation: no data, no slots, no commands, nothing model-visible.
  */
@@ -43,39 +54,6 @@ const BASE_TRANSITION = [
 ].join('\n')
 
 /**
- * What gets the base. Two halves: interactive by semantics (element name and
- * ARIA role, so hashed class prefixes never enter the picture), plus the row /
- * card / chip families by local-name fragment for the surfaces that are plain
- * divs with a hover paint (sidebar rows, workspace rows, plugin cards, tabs).
- */
-const INTERACTIVE = [
-  'button',
-  '[role="button"]',
-  '[role="menuitem"]',
-  '[role="option"]',
-  '[role="tab"]',
-  '[role="treeitem"]',
-  '[role="switch"]',
-  'a[href]',
-  'summary',
-  'input',
-  'textarea',
-  'select',
-  '[class*="_row"]',
-  '[class*="_card"]',
-  '[class*="_item"]',
-  '[class*="_chip"]',
-  '[class*="_pill"]',
-  '[class*="_toggle"]',
-  '[class*="_trigger"]',
-  '[class*="_action"]',
-  '[class*="_file"]',
-  '[class*="_crumb"]',
-  '[class*="_close"]',
-  '[class*="_tab"]',
-].join(',\n    ')
-
-/**
  * The sidebar New Session button reveals its shortcut chip by flipping
  * `opacity` 0 -> 1 on hover with no transition, so the chip pops into place.
  * The chip is the only element in that row whose state change is not a paint,
@@ -86,9 +64,7 @@ const SHORTCUT = '[class*="_newSessionShortcut"]'
 export const MOTION_CSS = [
   '@media (prefers-reduced-motion: no-preference) {',
   '  /* Base: colour, elevation and opacity fade; geometry untouched. */',
-  '  :where(',
-  '    ' + INTERACTIVE,
-  '  ) {',
+  '  :where(html, body, body *) {',
   BASE_TRANSITION,
   '  }',
   '',

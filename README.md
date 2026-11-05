@@ -57,7 +57,7 @@ composer 原本只有一条和卡片底色同调的 0.5px 发丝线（共享的 
 
 - **只过渡颜色** —— `background-color` / `color` / `border-color` / `outline-color` / `box-shadow` / `opacity`，hover 与 focus 100ms `ease-out`，阴影 200ms；**不碰任何尺寸与 `transform`**，不会重排布局，也不会和组件自己的动效（侧栏轨道、开关拇指、菜单淡入）打架。
 - **特异性归零** —— 选择器整体包在 `:where()` 里，组件自己声明的过渡（以及拖动侧栏时平台的「关掉过渡」开关）永远优先，本层只补空缺。
-- **覆盖范围** —— 语义选择（`button` / `[role="menuitem"]` / `[role="option"]` / `[role="tab"]` / `[role="switch"]` / `input` 等）加上行/卡片段（`_row` / `_card` / `_item` / `_chip` …），侧栏行、工作区行、插件卡、设置项、输入框一起变柔和。
+- **覆盖范围** —— 底座直接铺到 `html` / `body` / `body *`，不按类名挑选：产品的 CSS-module 类名带哈希又是驼峰（`_sessionRow` / `_cardMain`），按片段枚举会整族漏掉，而只过渡颜色属性铺满全站是安全的 —— 不改色的元素不付代价。侧栏行、工作区行、插件卡、设置项、输入框、菜单项因此一起变柔和。
 - **顺带修掉的一处** —— 侧栏「新会话」右侧的快捷键 chip 原本靠 `opacity` 0→1 硬跳出，现在淡入。
 - **尊重减动效偏好** —— 整层包在 `@media (prefers-reduced-motion: no-preference)` 内，系统设为减少动态时本层不存在。
 
@@ -118,7 +118,7 @@ dsh plugin --profile web add dsh-ui-interaction
 cd plugins/dsh-ui-interaction
 pnpm install && pnpm run build
 npm pack
-# 生成 dsh-ui-interaction-0.1.19.tgz
+# 生成 dsh-ui-interaction-0.1.20.tgz
 ```
 
 在中文 Windows（ANSI 代码页 936）上，构建需强制使用 UTF-8；`scripts/build.mjs` 会自动处理。参见 [AGENTS.md](AGENTS.md#构建与编码)。

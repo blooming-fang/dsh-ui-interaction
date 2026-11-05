@@ -1,6 +1,6 @@
 {
   "name": "dsh-ui-interaction",
-  "version": "0.1.19",
+  "version": "0.1.20",
   "description": "DeepSeek Harness Web 界面的交互优化集合：暖纸质外观主题（珊瑚橙主色 + 暖米白画布，含配套暗色面）、两级「提供商 → 模型」选择器、左侧栏两列面板网格与珊瑚色新会话主按钮、输入框高亮描边、全站交互过渡动效，以及去掉 logo 的品牌改版。",
   "keywords": [
     "deepseek-harness",
