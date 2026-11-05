@@ -149,8 +149,9 @@ export function apply(ctx: ClientContext): void {
   // This adds the missing base for colour, elevation and opacity only —
   // geometry is never touched, and every selector sits in :where() so any
   // component's own motion (or its "no transitions while dragging" switch)
-  // still wins.
-  ctx.effect(() => applyMotion(), 'dsh-ui-interaction: motion layer')
+  // still wins. It also mutes itself while ui-theme commits a palette swap, so
+  // switching light/dark stays an instant re-colour instead of a page fade.
+  ctx.effect(() => applyMotion(ctx), 'dsh-ui-interaction: motion layer')
 
   // Branding retouch: drop the whale/fish logos and present the sidebar brand
   // as "Dsh Harness". Pure decorative chrome, disposed with the plugin.

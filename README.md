@@ -60,6 +60,7 @@ composer 原本只有一条和卡片底色同调的 0.5px 发丝线（共享的 
 - **覆盖范围** —— 底座直接铺到 `html` / `body` / `body *`，不按类名挑选：产品的 CSS-module 类名带哈希又是驼峰（`_sessionRow` / `_cardMain`），按片段枚举会整族漏掉，而只过渡颜色属性铺满全站是安全的 —— 不改色的元素不付代价。侧栏行、工作区行、插件卡、设置项、输入框、菜单项因此一起变柔和。
 - **顺带修掉的一处** —— 侧栏「新会话」右侧的快捷键 chip 原本靠 `opacity` 0→1 硬跳出，现在淡入。
 - **尊重减动效偏好** —— 整层包在 `@media (prefers-reduced-motion: no-preference)` 内，系统设为减少动态时本层不存在。
+- **换主题不淡入** —— 切换明暗会重写全部令牌，如果放任底座，全站会一起淡过去。所以本层监听 ui-theme 的 `theme/change`，在事件里给 `html` 打上 `data-dshui-motion-off`（该状态下所有过渡为 `none`），两帧后新配色已画完再摘掉 —— 主题切换依旧是瞬时换色。
 
 ### 品牌改版：去掉 logo，保留品牌文字
 
@@ -118,7 +119,7 @@ dsh plugin --profile web add dsh-ui-interaction
 cd plugins/dsh-ui-interaction
 pnpm install && pnpm run build
 npm pack
-# 生成 dsh-ui-interaction-0.1.20.tgz
+# 生成 dsh-ui-interaction-0.1.21.tgz
 ```
 
 在中文 Windows（ANSI 代码页 936）上，构建需强制使用 UTF-8；`scripts/build.mjs` 会自动处理。参见 [AGENTS.md](AGENTS.md#构建与编码)。

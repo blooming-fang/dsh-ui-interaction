@@ -12,7 +12,7 @@
 3. **侧边栏面板两列网格** —— 把左侧栏顶部的全局面板行（插件 / Superagent / 自动化任务 / 我的工作台 / 更多）从单列改成两列网格，5 个面板从 5 行压到 3 行，省下的高度全给下面的工作区列表。
 4. **侧栏「新会话」主按钮** —— 把新会话按钮从「中性底 + 发丝线」改成与 composer 发送按钮同一套珊瑚橙色值（`button-info-fill` / `button-info-hover` + 白字）。
 5. **输入框高亮描边** —— composer 的边界原本只是和卡片底色同调的 0.5px 发丝线（`--dsw-elevation-soft`），在暖米色主题上几乎看不见；加一圈珊瑚色 `outline` 环，输入时加深。
-6. **全站过渡动效** —— 产品里 743 条会改颜色的状态规则只有 87 条（11.7%）声明了 `transition`，primitives 的 Button / Input / Menu / Pill / Tag / Tooltip 一条都没有，hover 与 focus 都是单帧硬切。本层补上这个底座：只过渡颜色/阴影/透明度（几何零改动），所有选择器包在 `:where()` 里让特异性归零，并整体挂在 `prefers-reduced-motion: no-preference` 下。
+6. **全站过渡动效** —— 产品里 743 条会改颜色的状态规则只有 87 条（11.7%）声明了 `transition`，primitives 的 Button / Input / Menu / Pill / Tag / Tooltip 一条都没有，hover 与 focus 都是单帧硬切。本层补上这个底座：只过渡颜色/阴影/透明度（几何零改动），所有选择器包在 `:where()` 里让特异性归零，整体挂在 `prefers-reduced-motion: no-preference` 下，并在换明暗主题的两帧里自动停手（主题切换仍是瞬时换色，不会变成整页淡入）。
 7. **品牌改版** —— 去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**：隐藏 `FishLogo`（侧栏品牌 mark slot 的折叠态工具栏与展开态头部、新会话英雄区的动态鱼形头图），保留侧栏 `sidebar.brand.name` 的无 logo wordmark 文字。
 
 **后续规划**：在本包内继续增加其它交互优化。每个新优化应遵循下文「新增一个优化功能」的流程，并与现有功能在同一 patch 层内共处。
@@ -116,12 +116,14 @@ composer 的卡片**没有 CSS 边框**：它的边是共享的 elevation 发丝
 - **不枚举任何类名** —— 底座是 `:where(html, body, body *)`，即全站每个元素，一个 hashed 类名都不写。产品的 CSS-module 类名既带构建哈希、又是驼峰（`_sessionRow` / `_panelRow` / `_cardMain`），按片段枚举会**静默漏掉整族**（`[class*="_row"]` 匹配不到 `_sessionRow`，实测覆盖率只有 17.7%），要补全就得写上几百个随版本腐坏的名字。因为只过渡颜色类属性，铺到每个元素上是安全的：不改色的元素不付任何代价。
 - **侧栏快捷键 chip** —— `…_newSessionShortcut` 靠 `opacity: 0 → 1` 出现且没有过渡（一 hover 就"啪"地跳出），单独补一条 `opacity` 100ms 淡入。
 - **减动效偏好** —— 整张表包在 `@media (prefers-reduced-motion: no-preference)` 里（平台有 105 处同样写法），偏好 reduce 时本层完全不存在。
-- **刻意不做的三件事** —— 菜单淡入平台已经自己做（`[data-menu-phase]` + `--dsh-menu-enter`，纯 opacity）；按下反馈（`scale(.98)`）属于设计口味，未采纳；会话行 hover 操作按钮是 `display: none → inline-flex`，要改成常驻 + `opacity` 就会改布局，因此放弃。切换明暗主题时全站颜色会跟着这 100ms 一起淡过去 —— 那是同一机制的副作用，没有为它单独加长时长。
+- **切换主题时不淡入** —— 换明暗会重写全部令牌，全站颜色属性一起变，底座会把这次换色演成整页 cross-fade。那不是本层的目的（它是给 hover/focus 用的），因此挂一个“停手”守卫：监听 ui-theme 的 `theme/change`，在事件里同步给 `html` 打上 `data-dshui-motion-off`，该属性下 `html[…], html[…] *` 的 `transition: none`（特异性 0,1,1，压过特异性 0 的底座，也压过组件自己的类级过渡）；两帧之后（新配色已经画完）再摘掉。所以切主题仍是瞬时换色，而不是一次 100ms 的整页淡入。
+- **刻意不做的三件事** —— 菜单淡入平台已经自己做（`[data-menu-phase]` + `--dsh-menu-enter`，纯 opacity）；按下反馈（`scale(.98)`）属于设计口味，未采纳；会话行 hover 操作按钮是 `display: none → inline-flex`，要改成常驻 + `opacity` 就会改布局，因此放弃。
 
 **不可回退的不变量**：
 - 只过渡颜色/阴影/透明度；**不得**加入 `all`、`height`、`width` 或 `transform` —— 那会重排布局，并和组件自有动效打架。
 - 选择器必须整体包在 `:where()` 里（特异性 0），底座保持 `html / body / body *` 全覆盖；**不得**改成靠 hashed 类名片段枚举"精准命中"（驼峰名会被整族漏掉），也**不得**用 `!important` 或类选择器去压组件的 `transition` / `animation`。
 - 必须整体包在 `@media (prefers-reduced-motion: no-preference)` 内。
+- 换主题必须保持瞬时：`theme/change` 上的 `data-dshui-motion-off` 守卫**不得**删除，也**不得**把摘除时机提前到一帧内（首帧还在算样式，提前摘掉会让换色重新开始过渡）。
 - 时长与曲线读平台令牌并带 fallback（`var(--ds-transition-duration-fast, 100ms)`），**不得**另起一套写死的刻度。
 - 这是纯呈现：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
 
@@ -292,11 +294,11 @@ Select-String -Path lib/client.js -Pattern 'require\("([^"]+)"\)' -AllMatches |
 
 ```sh
 # 构建 + 打包（prepack 运行完整性门槛）
-cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.20.tgz
+cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.21.tgz
 
 # 安装进 web profile（从源码目录或 tgz 路径均可）
 dsh plugin --profile web add D:\path\to\dsh-ui-interaction           # from source dir
-dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.20.tgz
+dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.21.tgz
 dsh plugin --profile web remove dsh-ui-interaction                   # 移除依赖 + 层
 # 安装/移除后重启 `dsh web`
 ```

@@ -29,6 +29,15 @@
  * nothing, and an element that animates opacity or background through a
  * keyframe or its own transition still wins on specificity.
  *
+ * The one place the base is deliberately muted is a theme swap: switching
+ * light/dark rewrites every token on `body`, so a colour transition on every
+ * element would turn the switch into a full-page cross-fade. That is not the
+ * intent of this layer (it is there for hover/focus, not for a scheme change),
+ * so the guard below turns transitions off for exactly the frames in which the
+ * new palette is committed: ui-theme emits `theme/change`, the attribute goes
+ * on before the browser recalculates style, and it comes off two frames later,
+ * once the new colours are already painted.
+ *
  * Pure presentation: no data, no slots, no commands, nothing model-visible.
  */
 
@@ -61,6 +70,14 @@ const BASE_TRANSITION = [
  */
 const SHORTCUT = '[class*="_newSessionShortcut"]'
 
+/**
+ * Attribute stamped on `html` while a new palette is being committed. It has
+ * to out-specify the base rule, which is why this one selector is not wrapped
+ * in `:where()`: 0,1,1 beats the base's 0,0,0, and it also beats a component's
+ * own class-level transition so a theme swap cannot start one anywhere.
+ */
+const SETTLE_ATTR = 'data-dshui-motion-off'
+
 export const MOTION_CSS = [
   '@media (prefers-reduced-motion: no-preference) {',
   '  /* Base: colour, elevation and opacity fade; geometry untouched. */',
@@ -74,18 +91,59 @@ export const MOTION_CSS = [
   '  }',
   '}',
   '',
+  '/* A palette swap is a re-colour, not an interaction: hold every transition',
+  '   off for the frames in which the new tokens are committed. */',
+  'html[' + SETTLE_ATTR + '],',
+  'html[' + SETTLE_ATTR + '] * {',
+  '  transition: none;',
+  '}',
+  '',
 ].join('\n')
 
+/** The only shape this module needs from the client context. */
+export interface ThemeChangeHost {
+  on?: unknown
+}
+
 /**
- * Mount the motion layer.
- * @returns a disposer that removes the style tag.
+ * Mount the motion layer, and hold transitions off across palette swaps.
+ * @param host - the client context; only its `on` is used (for `theme/change`).
+ * @returns a disposer that removes the style tag and the theme listener.
  */
-export function applyMotion(): () => void {
+export function applyMotion(host?: ThemeChangeHost): () => void {
   if (document.querySelector('style[data-plugin-css=' + JSON.stringify(STYLE_ID) + ']') !== null) return () => {}
   const style = document.createElement('style')
   style.dataset.plugin = PLUGIN_ID
   style.dataset.pluginCss = STYLE_ID
   style.textContent = MOTION_CSS
   document.head.append(style)
-  return () => { style.remove() }
+
+  const root = document.documentElement
+  let frame = 0
+  /* Called as a method on the host, never unbound: ctx.on resolves through the
+     service proxy and needs its receiver. */
+  const bind = host as { on?: (event: string, listener: () => void) => unknown } | undefined
+  const listener = (): void => {
+    /* Set synchronously: the browser recalculates style after the current task,
+       so the attribute is already there when the new palette is committed. */
+    root.setAttribute(SETTLE_ATTR, '')
+    if (frame !== 0) return
+    /* Two frames: the first lets the recalculated colours paint, the second is
+       the earliest point at which lifting the attribute cannot start a
+       transition of its own. */
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        root.removeAttribute(SETTLE_ATTR)
+      })
+    })
+  }
+  const stop = typeof bind?.on === 'function' ? bind.on('theme/change', listener) : undefined
+
+  return () => {
+    style.remove()
+    if (frame !== 0) cancelAnimationFrame(frame)
+    root.removeAttribute(SETTLE_ATTR)
+    if (typeof stop === 'function') (stop as () => void)()
+  }
 }
