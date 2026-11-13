@@ -17,6 +17,12 @@ Esc 逐层返回（模型 → 提供商 → 根 → 关闭）。`/model` 命令�
 
 > 当前对齐 **dsh 0.1.7-alpha.1**：目录来自 Host 代次共享的 `modelCatalog` + 本会话持久化的 `modelSelection` projection，提交走 `remote.session.selectModel`。详见 [AGENTS.md](AGENTS.md#目标-dsh-版本版本对齐)。
 
+### 原生 Agent Teams 选项恢复（0.1.23）
+
+在恢复版 0.1.21 基础上，补回模型菜单的 conversation.input.model.options 原生扩展槽。“启用智能体团队”由宿主 ui-agent-team 原组件贡献，不复制开关、不另建状态或提交路径；保留原生投影、提交忙状态、失败提示和关闭确认。方向键纳入团队 Switch，保存中禁用控件的短暂失焦不会误关菜单；选项异步出现时重新定位菜单。
+
+此修复不重新启用此前回退的新增动效或滚动条模块。按要求仅构建打包，不运行测试、不自动安装。
+
 ### 外观主题：暖纸质（warm paper）
 
 把一整套设计令牌（珊瑚橙主色 + 暖米白画布 + 同族暖炭黑暗色面）折进 ui-theme 的别名令牌层，整个 GUI 一键换肤，不改任何组件：
@@ -119,7 +125,7 @@ dsh plugin --profile web add dsh-ui-interaction
 cd plugins/dsh-ui-interaction
 pnpm install && pnpm run build
 npm pack
-# 生成 dsh-ui-interaction-0.1.21.tgz
+# 生成 dsh-ui-interaction-0.1.23.tgz
 ```
 
 在中文 Windows（ANSI 代码页 936）上，构建需强制使用 UTF-8；`scripts/build.mjs` 会自动处理。参见 [AGENTS.md](AGENTS.md#构建与编码)。

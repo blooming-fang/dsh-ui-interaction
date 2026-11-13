@@ -27,6 +27,12 @@
 - 本包的 `cordis.patch.yml` **禁用**内置的 `ui-model-selection` 行并**插入**本包自己的行。安装后它完全替换内置表面；不会同时启用内置包（两者会在同一 slot 上冲突）。
 - **不要**依赖 workspace 包：`D:\plugin\deepseek-harness\packages\client\ui-model-selection` 是 0.1.0-rc.5 的开发副本；对照物是**已安装闭包里的同名包**及其 `lib/types/**/*.d.ts`。
 
+### 原生模型菜单选项（0.1.23）
+
+恢复版保留 conversation.input.model.options 子槽（list / session），在根菜单中 renderSlot，并传递 locked（含模型提交忙状态）、dismiss（同步回焦）及 reportFailure（菜单外 toast）。原生 ui-agent-team 通过此槽显示“启用智能体团队”；不得重写其投影、请求或关闭确认。键盘候选包含原生 button[role=switch] 并跳过 disabled；Portal 的 Esc / 方向键只处理一次。保存时禁用焦点控件产生的空 relatedTarget blur 不可误关菜单。选项动态出现导致尺寸变化时局部 ResizeObserver 重新定位，关闭时清理。
+
+此版本只恢复原生选项，不能顺带接回已回退的组件动效模块。
+
 ## 当前功能：暖纸质外观主题（theme.ts）
 
 `dsh-ui-interaction` 在浏览器端挂一层**外观主题**（`theme.ts`）：把一整套设计令牌（珊瑚橙主色 + 暖米白画布 + 同族暖炭黑暗色面）折进 ui-theme 的别名令牌层，全站换肤而不改任何组件。
@@ -294,11 +300,11 @@ Select-String -Path lib/client.js -Pattern 'require\("([^"]+)"\)' -AllMatches |
 
 ```sh
 # 构建 + 打包（prepack 运行完整性门槛）
-cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.21.tgz
+cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.23.tgz
 
 # 安装进 web profile（从源码目录或 tgz 路径均可）
 dsh plugin --profile web add D:\path\to\dsh-ui-interaction           # from source dir
-dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.21.tgz
+dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.23.tgz
 dsh plugin --profile web remove dsh-ui-interaction                   # 移除依赖 + 层
 # 安装/移除后重启 `dsh web`
 ```

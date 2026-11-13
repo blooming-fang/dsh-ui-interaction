@@ -1,12 +1,29 @@
 /**
  * ModelSelect's injected face. The target 'conversation.input.model' seat is
  * declared (children table) and typed by ui-conversation's composer-bar
- * entry; this bundle only contributes the single occupant, so no SlotMap
- * merge lives here.
+ * entry. Its native options child is retained so independent session controls,
+ * including Agent Teams, can contribute to the root menu.
  */
 import type { ModelSelection } from '@deepseek-ai/dsh-api-session-controller/types'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { ModelDirectoryState } from './directory.ts'
+
+/** Owner contract of the native model-menu extension point. */
+export interface ModelMenuOptionsOwner {
+  locked: boolean
+  dismiss: () => void
+  reportFailure: (message: string) => void
+}
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface SlotMap {
+    'conversation.input.model.options': {
+      kind: 'list'
+      scope: 'session'
+      owner: ModelMenuOptionsOwner
+    }
+  }
+}
 
 /** Injected business face of the composer model seat. */
 export interface ModelSelectInjected {

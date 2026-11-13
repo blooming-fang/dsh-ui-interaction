@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ModelSelect: the composer's named model seat (`conversation.input.model`).
  * Two-level selection: the root menu is the Model / Effort row pair (label +
  * current value + a right chevron). Model drills twice 鈥?providers first,
@@ -30,7 +30,7 @@ import {
   IconCheckOutlineRegular, IconChevronDownOutlineRegular, IconChevronLeftOutlineRegular,
   IconChevronRightOutlineRegular, IconDataOutlineRegular, IconWarningOutlineRegular, Toast,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import type { PropsLocale, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import { descriptionOf } from './describe.ts'
 import type { ModelSelectInjected } from './slots.ts'
 import css from './ModelSelect.module.css'
@@ -59,8 +59,9 @@ const MENU_MARGIN = 12
  * @returns the trigger and, while open, the two-level menu.
  */
 export function ModelSelect(
-  { locked, available, directory, load, select, t }:
-  ModelSelectInjected & { locked: boolean } & PropsLocale<'model'>,
+  { locked, available, directory, load, select, t, renderSlot }:
+  ModelSelectInjected & { locked: boolean } & PropsLocale<'model'>
+    & Partial<Omit<PropsRenderSlots<'conversation.input.model.options'>, 'SessionProvider'>>,
 ) {
   const state = useSyncExternalStore(
     fn => directory.subscribe(fn),
@@ -159,11 +160,15 @@ export function ModelSelect(
       setMenuPos({ left: x, top: y })
     }
     place()
+    // Native options may arrive after their session projection loads.
+    const resize = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(place)
+    if (menuRef.current !== null) resize?.observe(menuRef.current)
     window.addEventListener('scroll', place, true)
     window.addEventListener('resize', place)
     return () => {
       window.removeEventListener('scroll', place, true)
       window.removeEventListener('resize', place)
+      resize?.disconnect()
     }
   }, [open, pane, state])
 
@@ -184,16 +189,20 @@ export function ModelSelect(
   }
 
   const moveFocus = (offset: number): void => {
-    const items = itemRefs.current.filter(item => item !== null)
+    // Include session controls contributed by the native options slot.
+    const items = [...menuRef.current?.querySelectorAll<HTMLButtonElement>(
+      'button[role="menuitem"]:not(:disabled), button[role="menuitemradio"]:not(:disabled), button[role="switch"]:not(:disabled)',
+    ) ?? []].filter(item => item.getAttribute('aria-disabled') !== 'true')
     if (items.length === 0) return
     const active = items.findIndex(item => item === document.activeElement)
-    const next = (Math.max(active, 0) + offset + items.length) % items.length
+    const next = active === -1 ? (offset > 0 ? 0 : items.length - 1) : (active + offset + items.length) % items.length
     items[next]?.focus()
   }
 
   const onRootKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
     if (event.key === 'Escape' && open) {
       event.preventDefault()
+      event.stopPropagation()
       // Escape backs out of the deepest drilled pane first, then closes.
       if (pane === 'models') setPane('providers')
       else if (pane !== 'root') setPane('root')
@@ -203,11 +212,18 @@ export function ModelSelect(
     if (!open) return
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
+      event.stopPropagation()
       moveFocus(event.key === 'ArrowDown' ? 1 : -1)
     }
   }
 
   const onBlur = (event: FocusEvent<HTMLDivElement>): void => {
+    // Native options disable while saving. A disabled focused control can emit
+    // a transient blur without an outside target; keep its owning menu open.
+    if (event.relatedTarget === null && event.target instanceof HTMLButtonElement && event.target.disabled) {
+      triggerRef.current?.focus({ preventScroll: true })
+      return
+    }
     // The portaled menu is a second focus container of the same widget.
     if (event.relatedTarget instanceof Node) {
       if (rootRef.current?.contains(event.relatedTarget) === true) return
@@ -338,6 +354,14 @@ export function ModelSelect(
                   <IconChevronRightOutlineRegular className={css.cellChevron} />
                 </button>
               )}
+              {renderSlot?.('conversation.input.model.options', {
+                locked: locked || busy,
+                dismiss: () => {
+                  close()
+                  triggerRef.current?.focus({ preventScroll: true })
+                },
+                reportFailure: message => { setToast({ seq: ++toastSeq.current, text: message }) },
+              })}
             </>
           )}
 
