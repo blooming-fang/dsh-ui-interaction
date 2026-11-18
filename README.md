@@ -4,6 +4,20 @@
 
 ## 当前已实现的功能
 
+### 两组独立的功能开关（0.1.24）
+
+每一项优化都归入**两个开关**之一，在「插件」页本包自己的页面里独立开关，拨一下立即生效：
+
+| 开关 | 管什么 |
+| --- | --- |
+| **交互与结构** | 两级「提供商 → 模型」选择器（含原生模型菜单选项槽）、侧栏两列面板网格、珊瑚色「新会话」主按钮、全站过渡动效、去掉 logo 的品牌改版 |
+| **外观主题** | 暖纸质配色令牌、字体与圆角刻度、composer 输入框的珊瑚色高亮描边 |
+
+- **值存在 profile 里** —— 两个开关是本包在 profile 中的插件配置（Host 把它投影成设置命名空间 `dsh-ui-interaction`），不是浏览器 localStorage；因此换浏览器、换设备都跟着走，也可以手改 profile 里的那一行。
+- **拨一下即时生效** —— 写入走 Host 设置文档，配置重新解析后把值回流到浏览器：关掉一组就立刻撤下该组的样式表、令牌层、slot 注册、服务与命令贡献，打开就立刻挂回。不需要重启 dsh、也不需要重装插件。
+- **默认都开** —— 没写过配置的安装行为与没有开关的版本完全一致；Host 不提供该命名空间（旧版 dsh）时前端也落在「开」。
+- **关掉「交互与结构」的后果** —— composer 的模型选择器会一起消失（内置的那个已被本包的 patch 禁用，`/model` 命令同时不可用）。这是「关闭这一组」的字面含义。
+
 ### 模型选择器优化（provider → model 两级下钻）
 
 把 composer 的模型选择从「单一按提供商分组的大列表」改为**先提供商、后模型**的两级选择：
@@ -76,6 +90,15 @@ composer 原本只有一条和卡片底色同调的 0.5px 发丝线（共享的 
 - **品牌文字保留** —— 侧栏 `sidebar.brand.name` 渲染的无 logo wordmark（`viewBox="26 0 156 24"`，即「deepseek HARNESS」文字）**不再隐藏**。0.1.7 把 logo 与文字拆成了两个独立 slot（`sidebar.brand.mark` / `sidebar.brand.name`）并给 `BrandWordmark` 加了 `includeMark` 开关，因此「只去 logo、留文字」现在是精确可达的；0.1.5 时代整块隐藏 wordmark 的做法已废弃（那会连品牌文字一起隐藏）。
 - **实现方式** —— 纯 CSS，用稳定 `viewBox` 签名隐藏 logo，不依赖 hashed 类名；`display:none` 隐藏而非删除，React 重渲染不会撤销；纯装饰，不接入数据或 slot。
 
+### 隐藏其他插件的品牌块（`.bt-brand`）
+
+**ds-bot** 插件在自己搭的侧栏顶栏里塞了一块品牌 chip：`<span class="bt-brand">DS Bot</span>`。本层把这块隐藏掉：
+
+- **精确匹配那个 class token** —— 用 `.bt-brand` 而不是 `[class*="bt-brand"]`，后者会连带命中同一命名族里的 `.bt-brand-whale`（那是它的鲸鱼标记，不归本层管）。
+- **层级最高** —— 所有者自己发 `.bt-brand{display:inline-flex}`、`.bt-side-top .bt-brand{…}`，而插件加载顺序不受本包控制。所以规则同时用 `!important` **和**加长选择器 `:root:root:root body .bt-brand`（特异性 (0,4,1)）：只有 `!important` 会被对方的 `!important` 反超，只有特异性会被对方的 `!important` 反超，两者都要。
+- **只隐藏不删除** —— 注入一张 `<style data-plugin>`，`display:none` 隐藏；React 重渲染不会把节点重新顶回来，也不碰 ds-bot 的任何状态。
+- **归「交互与结构」开关管** —— 与去掉 logo 的品牌改版同属铬件清理，关掉该开关时一起撤下。
+
 ## 后续规划
 
 本包会继续加入其它交互优化。每个新优化都在同一 patch 层内、按统一的接入缝隙（slot 注册、命令贡献、ctx 服务）叠加，并附带有明确的接管/覆盖关系。
@@ -104,6 +127,9 @@ dsh plugin --profile web add dsh-ui-interaction
 
 ## 开发者
 
+- `src/index.ts` —— 节点端：只声明 `Config`（两个 `volatile` 开关），Host 据此把本包投影成设置命名空间。
+- `src/client/switches.ts` —— 两组功能开关：`FeatureSwitchModel`（读写 Host 设置命名空间）与 `gateSwitch`（按开关挂载/拆除一组功能）。
+- `src/client/FeatureSwitches.tsx` —— 「插件」页本包页面里的开关卡片（两行 `Switch`）。
 - `src/client/ModelSelect.tsx` —— 两级「提供商 → 模型」席位组件（菜单 portal 到 `document.body`）。
 - `src/client/directory.ts` 与 `service.ts` —— 共享的按会话目录与 `modelDirectories` 服务。
 - `src/client/catalog.ts` —— Host 代次共享的模型目录（`remote.session.modelCatalog()`）。
@@ -114,6 +140,7 @@ dsh plugin --profile web add dsh-ui-interaction
 - `src/client/composer-frame.ts` —— 输入框珊瑚色高亮描边（outline，零布局）。
 - `src/client/motion.ts` —— 全站过渡动效：颜色/阴影/透明度底座（纯 CSS，零几何改动）。
 - `src/client/branding.ts` —— 品牌改版：隐藏鲸鱼/鱼形 logo，保留品牌文字（纯 CSS）。
+- `src/client/hide-brand.ts` —— 隐藏其他插件（ds-bot）的 `.bt-brand` 品牌块（纯 CSS，`:root` 加长 + `!important` 最高层级）。
 - `cordis.patch.yml` —— 禁用被替换表面并插入本包的层。
 - 参见 [AGENTS.md](AGENTS.md) 了解包契约、不可回退的不变量与新增功能的流程。
 
@@ -125,7 +152,7 @@ dsh plugin --profile web add dsh-ui-interaction
 cd plugins/dsh-ui-interaction
 pnpm install && pnpm run build
 npm pack
-# 生成 dsh-ui-interaction-0.1.23.tgz
+# 生成 dsh-ui-interaction-0.1.25.tgz
 ```
 
 在中文 Windows（ANSI 代码页 936）上，构建需强制使用 UTF-8；`scripts/build.mjs` 会自动处理。参见 [AGENTS.md](AGENTS.md#构建与编码)。

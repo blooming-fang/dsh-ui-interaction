@@ -1,5 +1,7 @@
 /**
- * `model` namespace dictionaries.
+ * `model` namespace dictionaries (the model surfaces) and
+ * `settings.interaction` dictionaries (the bundle's switch card on the
+ * Plugins page).
  *
  * `trigger.selectAria` reads identically to `trigger.fallback` today and is
  * still a separate key: the visible fallback label and the accessible name of
@@ -65,3 +67,29 @@ export const en = {
   'blocked.composer': 'This model is unavailable — select one to continue',
   'empty.efforts': 'This model provides no reasoning effort levels.',
 } satisfies Record<ModelKey, string>
+
+/** Dictionary namespace owning the bundle's switch card copy. */
+export const SWITCHES_LOCALE_NS = 'settings.interaction'
+
+/** Simplified Chinese switch-card dictionary (the key-set source of truth). */
+export const switchesZh = {
+  'title': '交互优化开关',
+  'description': '两组建模互不影响：关掉一组立刻撤下该组功能，关掉再打开即原样恢复，不需要重启或重装。',
+  'interaction.label': '交互与结构',
+  'interaction.hint': '两级「提供商 → 模型」选择器（含原生模型菜单选项槽）、侧栏两列面板网格、珊瑚色「新会话」主按钮、全站过渡动效、去掉 logo 的品牌改版。',
+  'appearance.label': '外观主题',
+  'appearance.hint': '暖纸质配色令牌、字体与圆角刻度，以及 composer 输入框的珊瑚色高亮描边。',
+} satisfies Record<string, string>
+
+/** The switch-card namespace key union. */
+export type SwitchesKey = keyof typeof switchesZh
+
+/** English switch-card dictionary, checked complete against the zh key set. */
+export const switchesEn = {
+  'title': 'Interaction switches',
+  'description': 'The two groups are independent: switching one off removes that group immediately, and switching it back on restores it — no restart, no reinstall.',
+  'interaction.label': 'Interaction and structure',
+  'interaction.hint': 'The two-level provider → model picker (with its native model-menu options slot), the two-column sidebar panel grid, the coral New Session button, the site-wide motion layer, and the logo-free brand retouch.',
+  'appearance.label': 'Appearance theme',
+  'appearance.hint': 'The warm-paper token palette, its type and radius scale, and the composer input\'s coral highlight ring.',
+} satisfies Record<SwitchesKey, string>

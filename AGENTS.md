@@ -14,6 +14,8 @@
 5. **输入框高亮描边** —— composer 的边界原本只是和卡片底色同调的 0.5px 发丝线（`--dsw-elevation-soft`），在暖米色主题上几乎看不见；加一圈珊瑚色 `outline` 环，输入时加深。
 6. **全站过渡动效** —— 产品里 743 条会改颜色的状态规则只有 87 条（11.7%）声明了 `transition`，primitives 的 Button / Input / Menu / Pill / Tag / Tooltip 一条都没有，hover 与 focus 都是单帧硬切。本层补上这个底座：只过渡颜色/阴影/透明度（几何零改动），所有选择器包在 `:where()` 里让特异性归零，整体挂在 `prefers-reduced-motion: no-preference` 下，并在换明暗主题的两帧里自动停手（主题切换仍是瞬时换色，不会变成整页淡入）。
 7. **品牌改版** —— 去掉 DeepSeek 的鲸鱼/鱼形 logo，**品牌文字保持不变**：隐藏 `FishLogo`（侧栏品牌 mark slot 的折叠态工具栏与展开态头部、新会话英雄区的动态鱼形头图），保留侧栏 `sidebar.brand.name` 的无 logo wordmark 文字。
+8. **两组功能开关** —— 「交互与结构」（第 1/3/4/6/7 项，含原生菜单选项槽）与「外观主题」（第 2/5 项）各一个开关，在「插件」页本包卡片里独立开关；值存在 profile 的本包配置里（Host 设置命名空间），关闭立即撤下该组、打开立即挂回，不重启、不重装。
+9. **隐藏其他插件的品牌块** —— ds-bot 在它自己的侧栏顶栏里渲染 `<span class="bt-brand">DS Bot</span>`；本层用这个稳定 class token 把它隐藏，规则带加长的 `:root` 选择器 + `!important`，层级高于所有者自己的 `.bt-brand` / `.bt-side-top .bt-brand` 规则。
 
 **后续规划**：在本包内继续增加其它交互优化。每个新优化应遵循下文「新增一个优化功能」的流程，并与现有功能在同一 patch 层内共处。
 
@@ -32,6 +34,27 @@
 恢复版保留 conversation.input.model.options 子槽（list / session），在根菜单中 renderSlot，并传递 locked（含模型提交忙状态）、dismiss（同步回焦）及 reportFailure（菜单外 toast）。原生 ui-agent-team 通过此槽显示“启用智能体团队”；不得重写其投影、请求或关闭确认。键盘候选包含原生 button[role=switch] 并跳过 disabled；Portal 的 Esc / 方向键只处理一次。保存时禁用焦点控件产生的空 relatedTarget blur 不可误关菜单。选项动态出现导致尺寸变化时局部 ResizeObserver 重新定位，关闭时清理。
 
 此版本只恢复原生选项，不能顺带接回已回退的组件动效模块。
+
+## 当前功能：两组功能开关（switches.ts + 主机端 Config）
+
+整包的每一项优化都归入**两个开关**之一，用户在「插件」页本包自己的页面里独立开关：
+
+- **交互与结构（`interaction`）** —— 两级模型选择器（含 `conversation.input.model.options` 原生选项槽）、侧栏两列面板网格、珊瑚色「新会话」主按钮、全站过渡动效、去掉 logo 的品牌改版。
+- **外观主题（`appearance`）** —— 暖纸质配色令牌、字体与圆角刻度、composer 珊瑚色高亮描边。
+
+- **值住在 Host 配置里** —— 主机端 `src/index.ts` 声明 `Config`（两个 `volatile` 布尔）。Host 把本包这一行投影成设置命名空间 `dsh-ui-interaction`；浏览器端只通过 `ctx.configForms.get('dsh-ui-interaction')` 读写。写入会改写 profile 里本包那一行的 `config`，`volatile` 让 fiber 立即重解配置，接受后的 section 再经设置镜像回流到浏览器，所以一次拨动就是**即时挂载/拆除**：不重启、不重装、不刷新。
+- **两个开关默认都开** —— `z.boolean().default(true)`：没写过 section 的安装行为与「没有开关的版本」完全一致；Host 根本不提供该命名空间（旧版 dsh、或不在 web profile）时，前端落在默认值，功能照旧全开，而不是静默消失。
+- **前端不得把 `configForms` 写进静态 `inject`** —— 走 `ctx.inject(['configForms'], …)` 机会式绑定。写进 `export const inject` 的话，缺该服务的部署会让整个插件 fiber 永远等待，连主题一起失效。
+- **挂载即闸门** —— `gateSwitch(ctx, model, field, mount, label)` 用一个 effect 订阅开关：开则 `mount()`（返回 tearDown），关则立刻 tearDown，插件卸载时统一拆除。`mount` 内部照旧用 `ctx.effect`（返回 disposer）或 `ctx.inject`（返回 fiber）登记，拆除时倒序执行 —— 模型两个入口先走，再撤它们读的服务。
+- **卡片位置** —— `plugins.bundle.config`（keyed，键 = 包名 `dsh-ui-interaction`），渲染在「插件」页本包页面的 `data-plugin-config` 段里；该 slot 契约在 `slots.ts` **本地声明**，不 import plugin-manager 包（客户端 bundle 不依赖组合层）。
+- **关闭 interaction 的已知后果** —— composer 的模型席位随之撤下，而内置 `ui-model-selection` 已被本包 patch 禁用，所以关掉这一组后 composer 不再有模型选择器（`/model` 命令也一起消失）。这是「关闭该组」的字面语义，不是缺陷。
+
+**不可回退的不变量**：
+- 两个开关默认必须是 `true`；**不得**为了"更干净"把默认值改成 `false`（那会让一次安装等于什么都没装）。
+- 值必须走 Host 设置文档（`Config` + `ctx.configForms`）；**不得**改用 localStorage 之类绕过 profile 的存储，也不得反过来让前端自己拼 profile 写入。
+- `configForms` 只能机会式获取（`ctx.inject`），**不得**进入静态 `inject` 列表。
+- 同一时刻只允许一个写入在途；卡片在写入期间必须把行置为 disabled（revision fence 只能有一个持有者）。
+- 任何新功能都要落进 `gateSwitch` 的两组之一，**不得**在 `apply` 顶层直接 `ctx.effect` 挂载功能；关闭一组必须能完整拆除（样式表、令牌层、slot 注册、服务、命令贡献都不残留）。
 
 ## 当前功能：暖纸质外观主题（theme.ts）
 
@@ -150,6 +173,22 @@ composer 的卡片**没有 CSS 边框**：它的边是共享的 elevation 发丝
 - 用 `display: none` 隐藏而非删除节点，避免 React 重新创建。
 - 这是纯装饰：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
 
+## 当前功能：隐藏其他插件的品牌块（hide-brand.ts）
+
+有些插件会往同一个界面里塞自己的品牌块。当前要治的是 **ds-bot**：它在自建的侧栏顶栏 `bt-side-top` 里渲染 `<span class="bt-brand"><span>DS Bot</span></span>`。
+
+- **稳定钩子是 class token 本身** —— ds-bot 的 `bt-*` 命名是**普通类名**（不是 CSS-module 哈希），所以 `.bt-brand` 可以精确匹配；用类选择器而不是 `[class*="bt-brand"]`，因为后者会连带命中同族的 `.bt-brand-whale`（那个鲸鱼标记不在本层职责内）。
+- **层级刻意最高** —— 所有者自己发 `.bt-brand{display:inline-flex}` 与 `.bt-side-top .bt-brand{…}`，且插件加载顺序不受本包控制。所以规则同时上 `!important` **和**加长选择器：`:root:root:root body .bt-brand`（特异性 (0,4,1)）。只靠特异性不够（对方若加 `!important` 就会反过来赢），只靠 `!important` 也不够（同重要级比特异性），两者都要。
+- **治不了的那种** —— 内联 `style="display:…!important"` 任何样式表都压不过；ds-bot 没有这么写，若将来出现，只能改成 JS 摘节点（但那会让 React 重建，违背本包的 React 安全约定，需重新评估）。
+- **只隐藏，不删除** —— 与品牌改版同款：注入一张 `<style data-plugin>`，`display:none` 隐藏；React 重渲染不会撤销，也不碰所有者的任何状态。
+- **挂在「交互与结构」组** —— 与品牌改版（第 7 项）同属结构/铬件清理；关掉该开关时整张样式表一起撤下。
+
+**不可回退的不变量**：
+- 只能匹配 `.bt-brand` 这个整 class token；**不得**改成 `[class*="bt-brand"]`（会误伤 `.bt-brand-whale` 等同族类），也不得改成任何 hashed 类片段。
+- 规则必须同时保留 `!important` 与加长特异性（`:root` 重复 + `body`）；把任一半删掉都会让所有者规则在某种加载顺序下重新赢。
+- 只隐藏、不删节点；**不得**改所有者的投影、状态或事件。
+- 这是纯呈现：不接入数据、slot 或命令，不产生任何 model-visible 输入，**不得**触发会话事件。
+
 ## 插件身份：icon 与本地化显示文本
 
 插件管理页（`dsh-client-ui-plugin-manager`）的卡片用宿主侧 `readPluginMeta`（`dsh-app-boot`）读到的 `meta` 渲染：图标 + 标题 + 一句话介绍。两者都要显式声明，否则卡片会退化成默认图标 + 包名 + 英文 `description`。
@@ -173,9 +212,12 @@ dsh-ui-interaction/
 ├── locale/zh.json        # 插件卡片本地化标题与一句话介绍（另需 en.json 作为发现入口）
 ├── cordis.patch.yml      # 组合层：禁用 ui-model-selection，插入本包行
 ├── src/
-│   ├── index.ts          # 节点端 — 有意为空（纯浏览器 UI）
-│   └── client/           # 浏览器端（模型选择 + 外观主题 + 侧栏网格/主按钮 + 输入框描边 + 过渡动效 + 品牌改版）
-│       ├── index.ts      # apply()：服务 + /model popup + composer 席位 + 主题/网格挂载
+│   ├── index.ts          # 节点端 — 只声明 Config（两个 volatile 开关），其余为纯浏览器 UI
+│   └── client/           # 浏览器端（功能开关 + 模型选择 + 外观主题 + 侧栏网格/主按钮 + 输入框描边 + 过渡动效 + 品牌改版）
+│       ├── index.ts      # apply()：开关模型 + 两组闸门（交互 / 外观）+ 卡片注册 + /model popup + composer 席位
+│       ├── switches.ts   # 两组功能开关：FeatureSwitchModel（Host 设置命名空间读/写）与 gateSwitch 闸门
+│       ├── FeatureSwitches.tsx       # 「插件」页本包卡片：两行 Switch
+│       ├── FeatureSwitches.module.css
 │       ├── service.ts    # ModelDirectoryResolver（ctx.modelDirectories）
 │       ├── catalog.ts    # ModelCatalogDirectory：Host 代次共享的模型目录
 │       ├── directory.ts  # 按会话的 ModelDirectory store（catalog + projection）
@@ -188,6 +230,7 @@ dsh-ui-interaction/
 │       ├── composer-frame.ts # 输入框珊瑚色高亮描边（outline，零布局）
 │       ├── motion.ts     # 全站过渡动效：颜色/阴影/透明度底座（零几何改动）
 │       ├── branding.ts   # 品牌改版：隐藏鲸鱼/鱼形 logo，保留品牌文字（纯 CSS）
+│       ├── hide-brand.ts # 隐藏其他插件（ds-bot）的 .bt-brand 品牌块（纯 CSS，!important 最高层级）
 │       ├── ModelSelect.tsx        # 两级「提供商 → 模型」席位
 │       └── ModelSelect.module.css
 ├── scripts/
@@ -237,6 +280,8 @@ cd plugins/dsh-ui-interaction && pnpm install && pnpm run build
 pnpm pack
 ```
 
+构建**不做类型检查**（`dts: false`），类型由 `tsc -p tsconfig.typecheck.json --noEmit` 把关：这份 tsconfig **刻意不继承** `../../tsconfig.base.json`，因为 base 的 `paths` 把 `@deepseek-ai/*` 指向 workspace 自己的源码（0.1.0-rc.5 / vendor 副本），会对着本包根本不会运行的版本报出几十条假错误（`IconCheckOutlineRegular` 不存在、`Volatile` 不存在、`description` 不是函数……）。它必须只依赖已安装的包解析。
+
 `scripts/build.mjs` 在运行 tsdown 前把 Windows 控制台代码页切到 UTF-8（65001）。**中文 Windows（ANSI 代码页 936）上必须如此**：否则 rolldown 把 UTF-8 源码按 CP936 读取，`lib/client.js` 里的中文产品文案会被破坏。POSIX 上该包装器为空操作。
 
 ## cordis.patch.yml
@@ -285,9 +330,11 @@ pnpm pack
 
 ## 依赖与闭包
 
-dsh 0.1.5 起，浏览器端的平台模块由**页面 module table**（seed 模块）提供，不再需要把 dsh 包装进 profile 当 peer。因此本包只声明一个 peer（`@deepseek-ai/cordis`），其余 `@deepseek-ai/*` 全部是**构建/类型期 devDeps**，只用于对照目标 dsh 版本的类型面：`dsh-api-remotes`、`dsh-api-session-controller`、`dsh-client-locale`、`dsh-client-store`、`dsh-client-ui-commands`、`dsh-client-ui-conversation`、`dsh-client-ui-input-trigger`、`dsh-client-ui-primitives`、`dsh-client-ui-renderer`、`dsh-client-ui-slots`、`dsh-client-ui-session`（提供 `SessionStandardProps.sessionId` 的品牌类型合并，类型复核必需）、`dsh-session`、`dsh-typert-protocol`，外加 `tsdown` / `typescript` / `lightningcss` / `@types/react(-dom)` / `clsx` / `react` / `react-dom`。
+dsh 0.1.5 起，浏览器端的平台模块由**页面 module table**（seed 模块）提供，不再需要把 dsh 包装进 profile 当 peer。因此本包只声明一个 peer（`@deepseek-ai/cordis`）。
 
-`dsh.client.inject` 列的是**必须先加载的客户端插件 id**（对应本包 `inject` 需要的服务面）：`@deepseek-ai/dsh-api-remotes`、`@deepseek-ai/dsh-api-session-controller`、`@deepseek-ai/dsh-client-locale`、`@deepseek-ai/dsh-client-ui-commands`。这里**只能**写真的客户端插件：写进去一个纯库（如 `@deepseek-ai/dsh-client-store`）或一个已被移除的包（如 `@deepseek-ai/dsh-client-runtime`），插件 fiber 会永远等待依赖而静默不生效。
+**唯一的运行期依赖是 `@deepseek-ai/schemastery`**（`dependencies`，`~3.19.0`）：节点端用 `z.object(...)` 写出 `Config`，cordis 用它校验配置、Host 用它把本包投影成设置命名空间。不要把它挪成 devDep，也不要换成本地手写的 schema。其余 `@deepseek-ai/*` 全部是**构建/类型期 devDeps**，只用于对照目标 dsh 版本的类型面：`dsh-api-remotes`、`dsh-api-session-controller`、`dsh-client-locale`、`dsh-client-store`、`dsh-client-ui-commands`、`dsh-client-ui-conversation`、`dsh-client-ui-input-trigger`、`dsh-client-ui-primitives`、`dsh-client-ui-renderer`、`dsh-client-ui-slots`、`dsh-client-ui-session`（提供 `SessionStandardProps.sessionId` 的品牌类型合并，类型复核必需）、`dsh-session`、`dsh-typert-protocol`，外加 `tsdown` / `typescript` / `lightningcss` / `@types/react(-dom)` / `clsx` / `react` / `react-dom`。
+
+`dsh.client.inject` 列的是**必须先加载的客户端插件 id**（对应本包 `inject` 需要的服务面）：`@deepseek-ai/dsh-api-remotes`、`@deepseek-ai/dsh-api-session-controller`、`@deepseek-ai/dsh-client-locale`、`@deepseek-ai/dsh-client-ui-commands`、`@deepseek-ai/dsh-client-ui-settings`（提供 `configForms`：功能开关的读/写面；**只是加载顺序**，`configForms` 本身仍走 `ctx.inject` 机会式获取）。这里**只能**写真的客户端插件：写进去一个纯库（如 `@deepseek-ai/dsh-client-store`）或一个已被移除的包（如 `@deepseek-ai/dsh-client-runtime`），插件 fiber 会永远等待依赖而静默不生效。
 
 > **构建期注意事项（重要）**：浏览器端 externals 必须**只**列 module table 能提供的平台模块。dsh 0.1.7-alpha.1 的表（与 0.1.5 相同，未变）为：`react`、`react/jsx-runtime`、`react-dom`、`react-dom/client`、`@deepseek-ai/cordis`、`@deepseek-ai/dsh-client-store`、`@deepseek-ai/dsh-client-ui-slots`、`@deepseek-ai/dsh-client-ui-primitives`、`@deepseek-ai/dsh-client-ui-dockkit`。**`clsx` 不是平台模块，必须内联** —— 否则运行时会抛 `require("clsx") missed the module table`（一次真实事故）。构建后复核：
 
@@ -300,11 +347,11 @@ Select-String -Path lib/client.js -Pattern 'require\("([^"]+)"\)' -AllMatches |
 
 ```sh
 # 构建 + 打包（prepack 运行完整性门槛）
-cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.23.tgz
+cd plugins/dsh-ui-interaction && npm pack     # -> dsh-ui-interaction-0.1.25.tgz
 
 # 安装进 web profile（从源码目录或 tgz 路径均可）
 dsh plugin --profile web add D:\path\to\dsh-ui-interaction           # from source dir
-dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.23.tgz
+dsh plugin --profile web add D:\path\to\dsh-ui-interaction-0.1.25.tgz
 dsh plugin --profile web remove dsh-ui-interaction                   # 移除依赖 + 层
 # 安装/移除后重启 `dsh web`
 ```

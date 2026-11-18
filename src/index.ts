@@ -1,12 +1,40 @@
 /**
  * dsh-ui-interaction, node half.
  *
- * Deliberately empty. The provider-first model picker is browser UI only: it
- * reads the session model directory through the client runtime and submits
- * through `session.selectModel`. Nothing here needs the host. The row exists
- * so the loader mounts the entry — which the client-modules node half scans
- * for its `dsh.client` declaration and serves the browser bundle for.
+ * The only host-side surface is the config schema behind the bundle's two
+ * feature switches. Declaring it does two things at once: the loader validates
+ * the switches and re-resolves them when the profile row changes, and the Host
+ * projects this entry as a settings namespace (`dsh-ui-interaction`), which is
+ * what the browser card writes through `ctx.configForms` and what every feature
+ * gate reads. Both fields are volatile, so a flip reaches a running browser
+ * without a restart.
+ *
+ * Both switches default to on: an install whose profile row carries no config
+ * behaves exactly like the release that had no switches at all, and a Host that
+ * serves no such namespace leaves the browser gates at their defaults (on).
  */
+import z from '@deepseek-ai/schemastery'
+import type { Volatile } from '@deepseek-ai/cordis'
 
-/** Host plugin body — no host behavior. */
+/** Live switch values. */
+export interface Config {
+  /** Model picker (with its native options slot), sidebar grid and CTA, motion layer, brand retouch. */
+  interaction: Volatile<boolean>
+  /** Warm-paper palette, type and radius scale, composer highlight ring. */
+  appearance: Volatile<boolean>
+}
+
+/** Config schema; the Host projects this entry into the Plugins page as this bundle's settings. */
+export const Config = z.object({
+  interaction: z.boolean().default(true).volatile(),
+  appearance: z.boolean().default(true).volatile(),
+})
+
+/**
+ * Host plugin body.
+ *
+ * Nothing to do here: the row exists so the loader mounts the entry (which the
+ * client-modules node half scans for its `dsh.client` declaration), and so the
+ * switches have a validated schema to live in. The browser half reads them.
+ */
 export function apply(): void {}

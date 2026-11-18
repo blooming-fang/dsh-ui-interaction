@@ -1,5 +1,7 @@
 /**
- * ModelSelect's injected face. The target 'conversation.input.model' seat is
+ * Slot declarations and injected faces of this bundle's two surfaces: the
+ * composer's model seat (with its native options child) and the switches card
+ * on the Plugins page. The target 'conversation.input.model' seat is
  * declared (children table) and typed by ui-conversation's composer-bar
  * entry. Its native options child is retained so independent session controls,
  * including Agent Teams, can contribute to the root menu.
@@ -21,6 +23,17 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
       kind: 'list'
       scope: 'session'
       owner: ModelMenuOptionsOwner
+    }
+    /**
+     * The Plugins page's own-bundle configuration cell, keyed by package name
+     * and rendered on that bundle's page. Declared here rather than imported:
+     * the plugin-manager package is a Host composition this bundle must not
+     * depend on, and only the `view` share is read here.
+     */
+    'plugins.bundle.config': {
+      kind: 'keyed'
+      scope: 'root'
+      owner: { readonly view: 'summary' | 'page' }
     }
   }
 }
